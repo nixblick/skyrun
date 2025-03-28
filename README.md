@@ -1,6 +1,6 @@
-# Skyrun Registration System (Statische Version)
+# Skyrun Registration System (Serverbasierte Version)
 
-Dieses System ermöglicht die Verwaltung von Anmeldungen für einen wöchentlichen Skyrun in einem Hochhaus. Es erlaubt maximal 25 Teilnehmer pro Woche und bietet eine Warteliste für zusätzliche Anmeldungen. Diese Version verwendet nur statische Dateien und speichert die Daten lokal im Browser des Benutzers.
+Dieses System ermöglicht die Verwaltung von Anmeldungen für einen wöchentlichen Skyrun in einem Hochhaus. Es erlaubt maximal 25 Teilnehmer pro Woche und bietet eine Warteliste für zusätzliche Anmeldungen. Diese Version verwendet PHP zur serverseitigen Speicherung der Daten in einer JSON-Datei.
 
 ## Funktionen
 
@@ -11,19 +11,32 @@ Dieses System ermöglicht die Verwaltung von Anmeldungen für einen wöchentlich
 - Admin-Bereich mit Passwortschutz zum Verwalten von Teilnehmern und Warteliste
 - Export- und Import-Funktionen für Teilnehmerdaten
 - Responsive Design für Desktop und mobile Geräte
+- **Zentrale Datenspeicherung auf dem Server**
 
 ## Verzeichnisstruktur
 
 - `index.html`: Die Hauptseite der Anwendung
 - `styles.css`: Stile für die Webseite
-- `script.js`: JavaScript zur Verwaltung der Anmeldungen
+- `server-script.js`: JavaScript für die Interaktion mit dem PHP-Backend
+- `api.php`: PHP-Backend zur Datenverwaltung
+- `registrations.json`: Datei zur serverseitigen Speicherung der Anmeldungen (wird automatisch erstellt)
 - `README.md`: Diese Dokumentation
+
+## Voraussetzungen
+
+- Ein Webserver mit PHP 7.0 oder höher
+- Schreibrechte für das Verzeichnis, in dem die `registrations.json` gespeichert wird
 
 ## Installation und Ausführung
 
-1. Laden Sie die Dateien auf Ihren lokalen Computer oder Webserver herunter
-2. Öffnen Sie die `index.html`-Datei in Ihrem Webbrowser
-3. Bei Verwendung auf einem Webserver sollten alle drei Dateien im selben Verzeichnis liegen
+1. Laden Sie alle Dateien auf Ihren Webserver hoch
+2. Stellen Sie sicher, dass das Verzeichnis, in dem sich die Dateien befinden, Schreibrechte für PHP hat (für die `registrations.json`-Datei)
+3. Öffnen Sie die Website in Ihrem Browser
+
+## Wichtige Sicherheitshinweise
+
+- **Das Standard-Admin-Passwort in `api.php` ist "skyrun2025"**. Ändern Sie dieses unbedingt für den produktiven Einsatz!
+- Die Datei `registrations.json` sollte nicht direkt über HTTP erreichbar sein. Konfigurieren Sie Ihren Webserver entsprechend oder platzieren Sie die Datei außerhalb des Webroot-Verzeichnisses.
 
 ## Benutzeranleitung
 
@@ -39,7 +52,7 @@ Dieses System ermöglicht die Verwaltung von Anmeldungen für einen wöchentlich
 ### Für Administratoren:
 
 1. Klicken Sie auf "Admin-Bereich" im Footer der Seite
-2. Geben Sie das Admin-Passwort ein (**skyrun2025**)
+2. Geben Sie das Admin-Passwort ein (standardmäßig "skyrun2025", sollte geändert werden)
 3. Nach erfolgreicher Anmeldung haben Sie Zugriff auf drei Tabs:
    - **Teilnehmer**: Zeigt alle angemeldeten Teilnehmer für das ausgewählte Datum an
    - **Warteliste**: Zeigt alle Personen auf der Warteliste für das ausgewählte Datum an
@@ -56,47 +69,73 @@ Dieses System ermöglicht die Verwaltung von Anmeldungen für einen wöchentlich
 
 6. Im Exportieren-Tab können Sie:
    - Daten als CSV exportieren (für Excel oder andere Tabellenkalkulationen)
-   - Daten als JSON exportieren (für Backups oder Übertragung auf andere Geräte)
+   - Daten als JSON exportieren (für Backups)
    - Zuvor exportierte JSON-Daten importieren
 
 ## Datenspeicherung
 
-Alle Daten werden im localStorage des Browsers gespeichert. Das bedeutet:
+Alle Daten werden in der Datei `registrations.json` auf dem Server gespeichert:
 
-- Die Daten bleiben auch nach dem Schließen des Browsers erhalten
-- Die Daten sind nur auf dem Gerät verfügbar, auf dem sie eingegeben wurden
-- Um die Daten auf ein anderes Gerät zu übertragen, verwenden Sie die Export/Import-Funktionen im Admin-Bereich
+- Die Daten werden zentral verwaltet und sind für alle Benutzer konsistent
+- Änderungen sind sofort für alle sichtbar
+- Die Datei sollte regelmäßig gesichert werden, um Datenverlust zu vermeiden
 
-## Sicherheitshinweise
+## Anpassungen
 
-- Das Admin-Passwort (**skyrun2025**) ist im Code festgelegt und sollte in einer produktiven Umgebung geändert werden
-- Da keine serverseitige Verarbeitung stattfindet, können mehrere Benutzer gleichzeitig Änderungen vornehmen, was zu Inkonsistenzen führen kann
-- Für eine produktive Umgebung mit mehreren Administratoren sollte eine Lösung mit einer zentralen Datenbank in Betracht gezogen werden
+### Admin-Passwort ändern
+
+Öffnen Sie die Datei `api.php` und ändern Sie die folgende Zeile:
+
+```php
+$adminPassword = 'skyrun2025'; // Ändern Sie dies zu einem sicheren Passwort
+```
+
+### Maximale Teilnehmerzahl ändern
+
+Die maximale Teilnehmerzahl ist in der Datei `api.php` festgelegt. Suchen Sie nach dem folgenden Code und ändern Sie die Zahl 25:
+
+```php
+if ($participantsCount >= 25) {
+    // ...
+}
+```
+
+Ebenso in `server-script.js`:
+
+```javascript
+const MAX_PARTICIPANTS = 25;
+```
+
+### Wochentag des Runs ändern
+
+Der Wochentag (standardmäßig Donnerstag) kann in der Funktion `generateRunDates()` in `server-script.js` angepasst werden.
+
+## Fehlerbehebung
+
+### Problem: Die Daten werden nicht gespeichert
+
+- Überprüfen Sie, ob PHP Schreibrechte für das Verzeichnis hat
+- Stellen Sie sicher, dass genügend Speicherplatz vorhanden ist
+- Überprüfen Sie die PHP-Fehlerprotokolle
+
+### Problem: Admin-Login funktioniert nicht
+
+- Überprüfen Sie, ob das richtige Passwort verwendet wird
+- Stellen Sie sicher, dass JavaScript im Browser aktiviert ist
+- Überprüfen Sie die Browser-Konsole auf Fehler
 
 ## Technische Details
 
 - **Frontend:** HTML5, CSS3, JavaScript (ES6+)
-- **Datenspeicherung:** Browser localStorage
+- **Backend:** PHP
+- **Datenspeicherung:** JSON-Datei auf dem Server
+- **Kommunikation:** Fetch API für AJAX-Anfragen
 - **Kompatibilität:** Unterstützt alle modernen Browser (Chrome, Firefox, Safari, Edge)
-
-## Anpassungsmöglichkeiten
-
-- Das maximale Teilnehmerlimit (25) kann in der Konstante `MAX_PARTICIPANTS` in `script.js` geändert werden
-- Der Wochentag (Donnerstag) kann in der Funktion `generateRunDates()` in `script.js` angepasst werden
-- Das Admin-Passwort kann in der Konstante `ADMIN_PASSWORD` in `script.js` geändert werden
-- Das Farbschema kann in den CSS-Variablen in `styles.css` angepasst werden
-
-## Einschränkungen
-
-- Keine serverseitige Verarbeitung
-- Keine Echtzeit-Benachrichtigungen bei Änderungen
-- Keine automatischen E-Mail-Benachrichtigungen
-- Die Daten sind lokal gespeichert und nicht zentral verwaltet
 
 ## Autor
 
-andre@nixblick.de
+Ihr Name
 
 ## Lizenz
 
-Dieses Projekt ist unter der Open Source.
+Dieses Projekt ist unter der MIT-Lizenz lizenziert.
