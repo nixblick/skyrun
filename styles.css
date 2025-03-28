@@ -146,7 +146,7 @@ footer a:hover {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 #registration-status {
@@ -257,12 +257,16 @@ th {
     max-width: 500px;
     width: 90%;
     text-align: center;
+    position: relative;
 }
 
 .close-modal {
-    float: right;
+    position: absolute;
+    top: 10px;
+    right: 15px;
     font-size: 28px;
     cursor: pointer;
+    color: #666;
 }
 
 .close-modal:hover {

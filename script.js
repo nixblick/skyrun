@@ -97,20 +97,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function setupEventListeners() {
         // Anmeldeformular absenden
-        form.addEventListener('submit', handleRegistration);
+        if (form) {
+            form.addEventListener('submit', handleRegistration);
+        }
         
         // Admin-Bereich anzeigen
-        adminLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            adminPanel.classList.remove('hidden');
-            window.scrollTo({
-                top: adminPanel.offsetTop,
-                behavior: 'smooth'
+        if (adminLink) {
+            adminLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                adminPanel.classList.remove('hidden');
+                window.scrollTo({
+                    top: adminPanel.offsetTop,
+                    behavior: 'smooth'
+                });
             });
-        });
+        }
         
         // Admin-Login
-        adminLoginBtn.addEventListener('click', handleAdminLogin);
+        if (adminLoginBtn) {
+            adminLoginBtn.addEventListener('click', handleAdminLogin);
+        }
         
         // Tab-Navigation
         tabButtons.forEach(button => {
@@ -135,27 +141,52 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Datum in Admin-Bereich ändern
-        adminDateSelect.addEventListener('change', updateParticipantsList);
-        waitlistDateSelect.addEventListener('change', updateWaitlistTable);
+        if (adminDateSelect) {
+            adminDateSelect.addEventListener('change', updateParticipantsList);
+        }
+        
+        if (waitlistDateSelect) {
+            waitlistDateSelect.addEventListener('change', updateWaitlistTable);
+        }
         
         // Daten exportieren
-        exportCsvBtn.addEventListener('click', exportAsCSV);
-        exportJsonBtn.addEventListener('click', exportAsJSON);
+        if (exportCsvBtn) {
+            exportCsvBtn.addEventListener('click', exportAsCSV);
+        }
+        
+        if (exportJsonBtn) {
+            exportJsonBtn.addEventListener('click', exportAsJSON);
+        }
         
         // Daten importieren
-        importBtn.addEventListener('click', importData);
+        if (importBtn) {
+            importBtn.addEventListener('click', importData);
+        }
         
         // Modal schließen
-        closeModalBtn.addEventListener('click', function() {
-            confirmationModal.classList.add('hidden');
-        });
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', function() {
+                confirmationModal.classList.add('hidden');
+            });
+        }
         
-        closeModalX.addEventListener('click', function() {
-            confirmationModal.classList.add('hidden');
-        });
+        if (closeModalX) {
+            closeModalX.addEventListener('click', function() {
+                confirmationModal.classList.add('hidden');
+            });
+        }
         
         // Event-Listener für Datum-Änderung im Anmeldeformular
-        runDateSelect.addEventListener('change', updateStatistics);
+        if (runDateSelect) {
+            runDateSelect.addEventListener('change', updateStatistics);
+        }
+        
+        // Modal bei Klick außerhalb schließen
+        window.addEventListener('click', function(event) {
+            if (event.target === confirmationModal) {
+                confirmationModal.classList.add('hidden');
+            }
+        });
     }
     
     function handleRegistration(e) {
@@ -240,8 +271,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function showStatus(message, type) {
         registrationStatus.textContent = message;
-        registrationStatus.className = type;
-        registrationStatus.classList.remove('hidden');
+        registrationStatus.classList.remove('success', 'error', 'warning', 'hidden');
+        registrationStatus.classList.add(type);
         
         // Nach 5 Sekunden ausblenden
         setTimeout(() => {
