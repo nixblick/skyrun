@@ -1,0 +1,47 @@
+Berufsfeuerwehr (BF) Wachen:
+1 - Eckenheim
+2 - Gallus
+3 - Nied
+4 - Sachsenhausen-Nord
+10 - Nieder-Eschbach
+11 - Bergen-Enkheim
+20 - Frankfurt-Flughafen
+21 - Heddernheim
+30 - Sossenheim
+31 - Unterliederbach
+40 - Ostend
+41 - Niederrad
+Freiwillige Feuerwehr (FF) Wachen:
+12 - Bergen
+13 - Enkheim
+14 - Berkersheim
+15 - Bonames
+16 - Kalbach
+17 - Nieder-Eschbach
+18 - Nieder-Erlenbach
+19 - Harheim
+22 - Heddernheim
+23 - Eschersheim
+24 - Niederursel
+25 - Praunheim
+26 - Hausen
+27 - Ginnheim
+28 - Schwanheim
+32 - Rödelheim
+33 - Griesheim
+34 - Nied
+35 - Höchst
+36 - Unterliederbach
+37 - Zeilsheim
+38 - Sindlingen
+39 - Sossenheim
+42 - Niederrad
+43 - Sachsenhausen
+44 - Oberrad
+45 - Fechenheim
+46 - Seckbach
+47 - Rettungshundestaffel (Eckenheim)
+Zusätzliche:
+49 - Jugendfeuerwehr
+50 - Sonstige
+OF - Langen

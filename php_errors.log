@@ -1,0 +1,196 @@
+[10-Apr-2025 21:42:57 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:42:57 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getConfig'
+[10-Apr-2025 21:42:57 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getConfig
+)
+
+[10-Apr-2025 21:46:13 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:46:13 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getConfig'
+[10-Apr-2025 21:46:13 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getConfig
+)
+
+[10-Apr-2025 21:46:13 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:46:13 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getStats'
+[10-Apr-2025 21:46:13 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getStats
+    [date] => 2025-04-17
+)
+
+[10-Apr-2025 21:46:15 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:46:15 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getConfig'
+[10-Apr-2025 21:46:15 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getConfig
+)
+
+[10-Apr-2025 21:46:15 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:46:15 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getStats'
+[10-Apr-2025 21:46:15 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getStats
+    [date] => 2025-04-17
+)
+
+[10-Apr-2025 21:46:41 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:46:41 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getConfig'
+[10-Apr-2025 21:46:41 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getConfig
+)
+
+[10-Apr-2025 21:46:41 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:46:41 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getStats'
+[10-Apr-2025 21:46:41 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getStats
+    [date] => 2025-04-17
+)
+
+[10-Apr-2025 21:47:15 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:47:15 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'adminLogin'
+[10-Apr-2025 21:47:15 Europe/Berlin] POST Parameter: Array
+(
+    [action] => adminLogin
+    [username] => admin
+    [password] => 2cclZ6qFvb6qhF7amQJU
+)
+
+[10-Apr-2025 21:47:16 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:47:16 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getParticipants'
+[10-Apr-2025 21:47:16 Europe/Berlin] POST Parameter: Array
+(
+    [action] => getParticipants
+    [username] => 
+    [password] => 
+    [date] => 2025-04-17
+)
+
+[10-Apr-2025 21:47:26 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:47:26 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'adminLogin'
+[10-Apr-2025 21:47:26 Europe/Berlin] POST Parameter: Array
+(
+    [action] => adminLogin
+    [username] => admin
+    [password] => 2cclZ6qFvb6qhF7amQJU
+)
+
+[10-Apr-2025 21:47:26 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:47:26 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getParticipants'
+[10-Apr-2025 21:47:26 Europe/Berlin] POST Parameter: Array
+(
+    [action] => getParticipants
+    [username] => 
+    [password] => 
+    [date] => 2025-04-17
+)
+
+[10-Apr-2025 21:47:44 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:47:44 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'adminLogin'
+[10-Apr-2025 21:47:44 Europe/Berlin] POST Parameter: Array
+(
+    [action] => adminLogin
+    [username] => admin
+    [password] => 2cclZ6qFvb6qhF7amQJU
+)
+
+[10-Apr-2025 21:47:44 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:47:44 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getParticipants'
+[10-Apr-2025 21:47:44 Europe/Berlin] POST Parameter: Array
+(
+    [action] => getParticipants
+    [username] => 
+    [password] => 
+    [date] => 2025-04-17
+)
+
+[10-Apr-2025 21:49:13 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:49:13 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getConfig'
+[10-Apr-2025 21:49:13 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getConfig
+)
+
+[10-Apr-2025 21:49:13 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:49:13 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getStats'
+[10-Apr-2025 21:49:13 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getStats
+    [date] => 2025-04-17
+)
+
+[10-Apr-2025 21:49:49 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:49:49 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'adminLogin'
+[10-Apr-2025 21:49:49 Europe/Berlin] POST Parameter: Array
+(
+    [action] => adminLogin
+    [username] => admin
+    [password] => 2cclZ6qFvb6qhF7amQJU
+)
+
+[10-Apr-2025 21:49:49 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:49:49 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getParticipants'
+[10-Apr-2025 21:49:49 Europe/Berlin] POST Parameter: Array
+(
+    [action] => getParticipants
+    [username] => 
+    [password] => 
+    [date] => 2025-04-17
+)
+
+[10-Apr-2025 21:56:53 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:56:53 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'adminLogin'
+[10-Apr-2025 21:56:53 Europe/Berlin] POST Parameter: Array
+(
+    [action] => adminLogin
+    [username] => admin
+    [password] => theSKYisthelimit
+)
+
+[10-Apr-2025 21:56:54 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:56:54 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getParticipants'
+[10-Apr-2025 21:56:54 Europe/Berlin] POST Parameter: Array
+(
+    [action] => getParticipants
+    [username] => 
+    [password] => 
+    [date] => 2025-04-17
+)
+
+[10-Apr-2025 21:57:07 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:57:07 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'adminLogin'
+[10-Apr-2025 21:57:07 Europe/Berlin] POST Parameter: Array
+(
+    [action] => adminLogin
+    [username] => admin
+    [password] => theSKYisthelimit
+)
+
+[10-Apr-2025 21:57:07 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:57:07 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getParticipants'
+[10-Apr-2025 21:57:07 Europe/Berlin] POST Parameter: Array
+(
+    [action] => getParticipants
+    [username] => 
+    [password] => 
+    [date] => 2025-04-17
+)
+
+[10-Apr-2025 21:57:20 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:57:20 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getConfig'
+[10-Apr-2025 21:57:20 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getConfig
+)
+
+[10-Apr-2025 21:57:20 Europe/Berlin] ===== API Call gestartet =====
+[10-Apr-2025 21:57:20 Europe/Berlin] Empfangene Aktion (aus GET/POST): 'getStats'
+[10-Apr-2025 21:57:20 Europe/Berlin] GET Parameter: Array
+(
+    [action] => getStats
+    [date] => 2025-04-17
+)
+

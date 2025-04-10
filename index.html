@@ -18,7 +18,7 @@
                 <h2>Informationen zum Skyrun</h2>
                 <p>Einmal wöchentlich haben Mitglieder der Freiwilligen Feuerwehr und der Berufsfeuerwehr Frankfurt die Gelegenheit, 
                     an einem exklusiven MesseTurm Run teilzunehmen. Dabei laufen wir entweder mit Atemschutzausrüstung, in Sportkleidung oder 
-                    in einer Kombination aus beidem. Die Teilnehmerzahl ist auf maximal 25 Personen pro Woche begrenzt.</p>
+                    in einer Kombination aus beidem. Die Teilnehmerzahl ist begrenzt.</p>
                 <div class="stats">
                     <div id="registered-count" class="stat">
                         <span id="current-registrations">0</span>/<span id="max-registrations">25</span>
@@ -56,6 +56,11 @@
                     </div>
                     
                     <div class="form-group">
+                        <label for="person-count">Anzahl Personen:</label>
+                        <input type="number" id="person-count" name="person-count" min="1" max="10" value="1" required>
+                    </div>
+                    
+                    <div class="form-group">
                         <label for="run-date">Datum:</label>
                         <select id="run-date" name="run-date" required>
                             <!-- Wird durch JavaScript gefüllt -->
@@ -73,9 +78,10 @@
 
             <section class="admin-panel hidden">
                 <h2>Admin-Bereich</h2>
-                <p>Geben Sie das Admin-Passwort ein, um die Liste der Anmeldungen zu sehen:</p>
+                <p>Geben Sie Ihre Admin-Zugangsdaten ein, um die Liste der Anmeldungen zu sehen:</p>
                 <div class="form-group">
-                    <input type="password" id="admin-password" placeholder="Admin-Passwort">
+                    <input type="text" id="admin-username" placeholder="Benutzername">
+                    <input type="password" id="admin-password" placeholder="Passwort">
                     <button id="admin-login-btn">Einloggen</button>
                 </div>
                 
@@ -84,6 +90,7 @@
                         <button class="tab-btn active" data-tab="participants">Teilnehmer</button>
                         <button class="tab-btn" data-tab="waitlist">Warteliste</button>
                         <button class="tab-btn" data-tab="export">Exportieren</button>
+                        <button class="tab-btn" data-tab="settings">Einstellungen</button>
                     </div>
                     
                     <div id="participants-tab" class="tab-content active">
@@ -97,6 +104,7 @@
                                     <th>Name</th>
                                     <th>E-Mail</th>
                                     <th>Telefon</th>
+                                    <th>Personen</th>
                                     <th>Aktionen</th>
                                 </tr>
                             </thead>
@@ -117,6 +125,7 @@
                                     <th>Name</th>
                                     <th>E-Mail</th>
                                     <th>Telefon</th>
+                                    <th>Personen</th>
                                     <th>Aktionen</th>
                                 </tr>
                             </thead>
@@ -142,6 +151,58 @@
                             <button id="import-btn">Importieren</button>
                         </div>
                     </div>
+                    
+                    <div id="settings-tab" class="tab-content">
+                        <h3>Einstellungen</h3>
+                        <form id="settings-form">
+                            <div class="form-group">
+                                <label for="max-participants">Maximale Teilnehmerzahl:</label>
+                                <input type="number" id="max-participants" name="max-participants" min="1" value="25" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="run-day">Wochentag des Runs:</label>
+                                <select id="run-day" name="run-day">
+                                    <option value="0">Sonntag</option>
+                                    <option value="1">Montag</option>
+                                    <option value="2">Dienstag</option>
+                                    <option value="3">Mittwoch</option>
+                                    <option value="4" selected>Donnerstag</option>
+                                    <option value="5">Freitag</option>
+                                    <option value="6">Samstag</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="run-time">Uhrzeit des Runs:</label>
+                                <input type="time" id="run-time" name="run-time" value="19:00" required>
+                            </div>
+                            
+                            <button type="submit" id="save-settings-btn">Einstellungen speichern</button>
+                        </form>
+                        
+                        <div class="password-change">
+                            <h3>Passwort ändern</h3>
+                            <form id="password-form">
+                                <div class="form-group">
+                                    <label for="current-password">Aktuelles Passwort:</label>
+                                    <input type="password" id="current-password" name="current-password" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="new-password">Neues Passwort:</label>
+                                    <input type="password" id="new-password" name="new-password" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="confirm-password">Passwort bestätigen:</label>
+                                    <input type="password" id="confirm-password" name="confirm-password" required>
+                                </div>
+                                
+                                <button type="submit" id="change-password-btn">Passwort ändern</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
@@ -160,6 +221,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="server-script.js"></script>
 </body>
 </html>
