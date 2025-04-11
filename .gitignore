@@ -13,3 +13,4 @@ config.php
 # Ignoriert alle anderen Dateien, die nicht getrackt werden sollen
 # (fügen Sie hier spezifische Dateien oder Verzeichnisse hinzu, falls nötig)
 backup_db.php
+wachen.txt
