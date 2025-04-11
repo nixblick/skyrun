@@ -1,168 +1,87 @@
 <?php
-// config.php einbinden (stellt DB-Verbindung her, setzt Zeitzone und Error Handling)
+// config.php einbinden
 require_once 'config.php';
 
-// CORS-Header für lokale Entwicklung und API-Zugriff
-header('Access-Control-Allow-Origin: *'); // Anpassen für Produktion (z.B. auf deine Domain)
+// Session starten
+session_start();
+
+// CORS-Header
+header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
-// OPTIONS-Anfragen für CORS Preflight beantworten
+// OPTIONS-Anfragen für CORS Preflight
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// Datenbankverbindung herstellen
+// Datenbankverbindung
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-
-// Verbindung überprüfen
 if ($conn->connect_error) {
-    // Logge den Fehler, aber gib keine Details an den Client weiter
     error_log("Datenbankverbindung fehlgeschlagen: " . $conn->connect_error);
     echo json_encode(['success' => false, 'message' => 'Serverfehler bei der Datenbankverbindung.']);
     exit;
 }
-
-// Zeichensatz auf UTF-8 setzen
-if (!$conn->set_charset("utf8mb4")) {
-     error_log("Fehler beim Laden des Zeichensatzes utf8mb4: " . $conn->error);
-     // Optional: Prozess beenden, wenn Zeichensatz kritisch ist
-     // echo json_encode(['success' => false, 'message' => 'Serverfehler bei Zeichensatzkodierung.']);
-     // exit;
-}
+$conn->set_charset("utf8mb4");
 
 // === Hilfsfunktionen ===
 
-/**
- * Holt die maximale Teilnehmerzahl aus der config-Tabelle.
- * @return int Maximale Teilnehmerzahl (Standard: 25).
- */
 function getMaxParticipants() {
     global $conn;
     $defaultMax = 25;
     $stmt = $conn->prepare("SELECT `value` FROM config WHERE `key` = ?");
-    if (!$stmt) {
-        error_log("Prepare failed (getMaxParticipants): (" . $conn->errno . ") " . $conn->error);
-        return $defaultMax;
-    }
     $key = 'max_participants';
     $stmt->bind_param("s", $key);
-    if (!$stmt->execute()) {
-        error_log("Execute failed (getMaxParticipants): (" . $stmt->errno . ") " . $stmt->error);
-        return $defaultMax;
-    }
+    $stmt->execute();
     $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        return (int)$row['value'];
-    }
-    return $defaultMax;
+    return $result->fetch_assoc()['value'] ?? $defaultMax;
 }
 
-/**
- * Zählt die angemeldeten Teilnehmer (nicht auf Warteliste) für ein Datum.
- * @param string $date Datum im Format 'YYYY-MM-DD'.
- * @return int Anzahl der Teilnehmer.
- */
 function countParticipantsForDate($date) {
     global $conn;
     $stmt = $conn->prepare("SELECT COALESCE(SUM(personCount), 0) as total FROM registrations WHERE date = ? AND waitlisted = 0");
-    if (!$stmt) {
-        error_log("Prepare failed (countParticipantsForDate): (" . $conn->errno . ") " . $conn->error);
-        return 0;
-    }
     $stmt->bind_param("s", $date);
-    if (!$stmt->execute()) {
-        error_log("Execute failed (countParticipantsForDate): (" . $stmt->errno . ") " . $stmt->error);
-        return 0;
-    }
+    $stmt->execute();
     $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        return (int)$row['total'];
-    }
-    return 0;
+    return (int)$result->fetch_assoc()['total'];
 }
 
-/**
- * Zählt die Teilnehmer auf der Warteliste für ein Datum.
- * @param string $date Datum im Format 'YYYY-MM-DD'.
- * @return int Anzahl der Personen auf der Warteliste.
- */
 function countWaitlistedForDate($date) {
     global $conn;
-    // Zählt die Anzahl der Einträge (Gruppen) auf der Warteliste
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM registrations WHERE date = ? AND waitlisted = 1");
-    if (!$stmt) {
-        error_log("Prepare failed (countWaitlistedForDate): (" . $conn->errno . ") " . $conn->error);
-        return 0;
-    }
     $stmt->bind_param("s", $date);
-    if (!$stmt->execute()) {
-        error_log("Execute failed (countWaitlistedForDate): (" . $stmt->errno . ") " . $stmt->error);
-        return 0;
-    }
+    $stmt->execute();
     $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        return (int)$row['total'];
-    }
-    return 0;
+    return (int)$result->fetch_assoc()['total'];
 }
 
-/**
- * Überprüft Admin-Login-Daten gegen die users-Tabelle.
- * @param string $username Eingegebener Benutzername.
- * @param string $password Eingegebenes Passwort.
- * @return bool True, wenn Login gültig, sonst false.
- */
 function verifyAdminLogin($username, $password) {
     global $conn;
-    if (empty($username) || empty($password)) {
-        return false;
-    }
-
+    if (empty($username) || empty($password)) return false;
     $stmt = $conn->prepare("SELECT password_hash FROM users WHERE username = ?");
-    if (!$stmt) {
-        error_log("Prepare failed (verifyAdminLogin): (" . $conn->errno . ") " . $conn->error);
-        return false;
-    }
     $stmt->bind_param("s", $username);
-    if (!$stmt->execute()) {
-        error_log("Execute failed (verifyAdminLogin): (" . $stmt->errno . ") " . $stmt->error);
-        return false;
-    }
+    $stmt->execute();
     $result = $stmt->get_result();
-
     if ($row = $result->fetch_assoc()) {
-        $hashedPassword = $row['password_hash'];
-        return password_verify($password, $hashedPassword);
+        return password_verify($password, $row['password_hash']);
     }
     return false;
 }
 
+function isAdminAuthenticated() {
+    return isset($_SESSION['admin_authenticated']) && $_SESSION['admin_authenticated'] === true;
+}
 
 // === Hauptlogik ===
 
-// Aktion aus POST oder GET holen
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
-
-// ******************************************
-// *** NEUES LOGGING ZUR FEHLERSUCHE HIER ***
-// ******************************************
 error_log("===== API Call gestartet =====");
-error_log("Empfangene Aktion (aus GET/POST): '" . $action . "'");
-if (!empty($_GET)) {
-    error_log("GET Parameter: " . print_r($_GET, true));
-}
-if (!empty($_POST)) {
-    error_log("POST Parameter: " . print_r($_POST, true));
-}
-// ******************************************
-// *** ENDE LOGGING ***
-// ******************************************
-
-
+error_log("Aktion: '$action'");
+if (!empty($_GET)) error_log("GET: " . print_r($_GET, true));
+if (!empty($_POST)) error_log("POST: " . print_r($_POST, true));
 
 switch ($action) {
     case 'register':
@@ -173,48 +92,37 @@ switch ($action) {
         $acceptWaitlist = filter_var($_POST['acceptWaitlist'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $personCount = filter_var($_POST['personCount'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 
-        // Validierung
         if (empty($name) || empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || empty($date) || $personCount === false) {
-            echo json_encode(['success' => false, 'message' => 'Bitte alle Pflichtfelder korrekt ausfüllen (Name, gültige E-Mail, Datum, Personenanzahl >= 1).']);
+            echo json_encode(['success' => false, 'message' => 'Pflichtfelder fehlen oder ungültig.']);
             exit;
         }
 
-        // Prüfen, ob E-Mail bereits registriert ist für dieses Datum
         $stmt = $conn->prepare("SELECT id FROM registrations WHERE email = ? AND date = ?");
         $stmt->bind_param("ss", $email, $date);
         $stmt->execute();
         if ($stmt->get_result()->num_rows > 0) {
-            echo json_encode(['success' => false, 'message' => 'Diese E-Mail-Adresse ist für dieses Datum bereits registriert.']);
+            echo json_encode(['success' => false, 'message' => 'E-Mail bereits für dieses Datum registriert.']);
             exit;
         }
-        $stmt->close(); // Wichtig: Statement schließen
+        $stmt->close();
 
         $maxParticipants = getMaxParticipants();
         $participantsCount = countParticipantsForDate($date);
         $isWaitlisted = ($participantsCount + $personCount) > $maxParticipants;
 
         if ($isWaitlisted && !$acceptWaitlist) {
-            echo json_encode([
-                'success' => false,
-                'message' => "Für dieses Datum sind leider nur noch " . ($maxParticipants - $participantsCount) . " Plätze frei (Ihre Anfrage: $personCount). Bitte wählen Sie ein anderes Datum oder aktivieren Sie die Warteliste-Option."
-            ]);
+            echo json_encode(['success' => false, 'message' => "Nur noch " . ($maxParticipants - $participantsCount) . " Plätze frei."]);
             exit;
         }
 
-        // Neue Registrierung hinzufügen
         $stmt = $conn->prepare("INSERT INTO registrations (name, email, phone, date, waitlisted, registrationTime, personCount) VALUES (?, ?, ?, ?, ?, NOW(), ?)");
-        $waitlistedInt = $isWaitlisted ? 1 : 0; // Boolean in Integer umwandeln für DB
+        $waitlistedInt = $isWaitlisted ? 1 : 0;
         $stmt->bind_param("ssssii", $name, $email, $phone, $date, $waitlistedInt, $personCount);
-
         if ($stmt->execute()) {
-            echo json_encode([
-                'success' => true,
-                'message' => $isWaitlisted ? 'Sie wurden erfolgreich auf die Warteliste gesetzt.' : 'Ihre Anmeldung wurde erfolgreich registriert.',
-                'isWaitlisted' => $isWaitlisted
-            ]);
+            echo json_encode(['success' => true, 'message' => $isWaitlisted ? 'Auf Warteliste gesetzt.' : 'Anmeldung erfolgreich.', 'isWaitlisted' => $isWaitlisted]);
         } else {
-             error_log("Fehler bei der Registrierung (INSERT): (" . $stmt->errno . ") " . $stmt->error);
-             echo json_encode(['success' => false, 'message' => 'Fehler bei der Registrierung. Bitte versuchen Sie es später erneut.']);
+            error_log("INSERT Fehler: " . $stmt->error);
+            echo json_encode(['success' => false, 'message' => 'Registrierungsfehler.']);
         }
         $stmt->close();
         break;
@@ -225,42 +133,40 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Kein Datum angegeben']);
             exit;
         }
-
-        $participantsCount = countParticipantsForDate($date);
-        $waitlistCount = countWaitlistedForDate($date); // Anzahl der Einträge auf der Warteliste
-        $maxParticipants = getMaxParticipants();
-
         echo json_encode([
             'success' => true,
-            'participants' => $participantsCount,
-            'waitlist' => $waitlistCount,
-            'maxParticipants' => $maxParticipants
+            'participants' => countParticipantsForDate($date),
+            'waitlist' => countWaitlistedForDate($date),
+            'maxParticipants' => getMaxParticipants()
         ]);
         break;
 
     case 'adminLogin':
-        // **Verwendet jetzt die users Tabelle**
         $username = trim($_POST['username'] ?? '');
         $password = trim($_POST['password'] ?? '');
 
         if (verifyAdminLogin($username, $password)) {
+            $_SESSION['admin_authenticated'] = true;
+            $_SESSION['admin_username'] = $username; // Optional für spätere Nutzung
             echo json_encode(['success' => true]);
         } else {
-            // Generische Fehlermeldung aus Sicherheitsgründen
-            echo json_encode(['success' => false, 'message' => 'Ungültiger Benutzername oder Passwort.']);
+            echo json_encode(['success' => false, 'message' => 'Ungültige Zugangsdaten.']);
         }
         break;
 
+    case 'adminLogout':
+        session_unset();
+        session_destroy();
+        echo json_encode(['success' => true]);
+        break;
+
     case 'getParticipants':
-        $username = trim($_POST['username'] ?? '');
-        $password = trim($_POST['password'] ?? '');
-        $date = trim($_POST['date'] ?? '');
-
-        if (!verifyAdminLogin($username, $password)) {
-             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
-             exit;
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
         }
-
+        $date = trim($_POST['date'] ?? '');
         if (empty($date)) {
             echo json_encode(['success' => false, 'message' => 'Kein Datum angegeben.']);
             exit;
@@ -274,13 +180,9 @@ switch ($action) {
         $participants = [];
         $waitlist = [];
         while ($row = $result->fetch_assoc()) {
-            // Boolean für JSON umwandeln
             $row['waitlisted'] = (bool)$row['waitlisted'];
-            if ($row['waitlisted']) {
-                $waitlist[] = $row;
-            } else {
-                $participants[] = $row;
-            }
+            if ($row['waitlisted']) $waitlist[] = $row;
+            else $participants[] = $row;
         }
         $stmt->close();
 
@@ -293,183 +195,135 @@ switch ($action) {
         break;
 
     case 'removeParticipant':
-         $username = trim($_POST['username'] ?? '');
-         $password = trim($_POST['password'] ?? '');
-         $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
-         $date = trim($_POST['date'] ?? ''); // Datum wird benötigt, um Nachrücker für den richtigen Tag zu ermitteln
-
-        if (!verifyAdminLogin($username, $password)) {
-             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
-             exit;
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
         }
-
-        if ($id === false || $id <= 0 || empty($date)) {
-            echo json_encode(['success' => false, 'message' => 'Ungültige oder fehlende Parameter (ID, Datum).']);
+        $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
+        $date = trim($_POST['date'] ?? '');
+        if ($id <= 0 || empty($date)) {
+            echo json_encode(['success' => false, 'message' => 'Ungültige Parameter.']);
             exit;
         }
 
-        // Infos über den zu löschenden Teilnehmer holen (war er auf Warteliste?)
         $stmt = $conn->prepare("SELECT waitlisted, personCount FROM registrations WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $result = $stmt->get_result();
-        $removedParticipantInfo = $result->fetch_assoc();
+        $removed = $stmt->get_result()->fetch_assoc();
         $stmt->close();
 
-        if (!$removedParticipantInfo) {
-             echo json_encode(['success' => false, 'message' => 'Teilnehmer nicht gefunden.']);
-             exit;
+        if (!$removed) {
+            echo json_encode(['success' => false, 'message' => 'Teilnehmer nicht gefunden.']);
+            exit;
         }
 
-        $wasWaitlisted = (bool)$removedParticipantInfo['waitlisted'];
-
-        // Teilnehmer löschen
         $stmt = $conn->prepare("DELETE FROM registrations WHERE id = ?");
         $stmt->bind_param("i", $id);
         $deleted = $stmt->execute();
         $stmt->close();
 
-        if (!$deleted) {
-             error_log("Fehler beim Löschen (DELETE): ID $id");
-             echo json_encode(['success' => false, 'message' => 'Fehler beim Löschen des Teilnehmers.']);
-             exit;
-        }
-
-        // --- Nachrückverfahren starten, wenn ein regulärer Teilnehmer gelöscht wurde ---
-        if (!$wasWaitlisted) {
+        if ($deleted && !$removed['waitlisted']) {
             $maxParticipants = getMaxParticipants();
             $currentParticipants = countParticipantsForDate($date);
             $availableSpots = $maxParticipants - $currentParticipants;
 
             if ($availableSpots > 0) {
-                // Hole potenzielle Nachrücker von der Warteliste für dieses Datum
-                 $stmt = $conn->prepare("SELECT id, personCount FROM registrations WHERE date = ? AND waitlisted = 1 ORDER BY registrationTime ASC");
-                 $stmt->bind_param("s", $date);
-                 $stmt->execute();
-                 $waitlistResult = $stmt->get_result();
+                $stmt = $conn->prepare("SELECT id, personCount FROM registrations WHERE date = ? AND waitlisted = 1 ORDER BY registrationTime ASC");
+                $stmt->bind_param("s", $date);
+                $stmt->execute();
+                $waitlistResult = $stmt->get_result();
 
-                 while ($availableSpots > 0 && $waitlistEntry = $waitlistResult->fetch_assoc()) {
-                     if ($waitlistEntry['personCount'] <= $availableSpots) {
-                         // Hochstufen
-                         $updateStmt = $conn->prepare("UPDATE registrations SET waitlisted = 0 WHERE id = ?");
-                         $updateStmt->bind_param("i", $waitlistEntry['id']);
-                         if ($updateStmt->execute()) {
-                              $availableSpots -= $waitlistEntry['personCount'];
-                              // Optional: Benachrichtigung für hochgestuften Teilnehmer
-                              error_log("Teilnehmer ID " . $waitlistEntry['id'] . " für Datum $date hochgestuft.");
-                         } else {
-                              error_log("Fehler beim Hochstufen von ID " . $waitlistEntry['id'] . ": (" . $updateStmt->errno . ") " . $updateStmt->error);
-                         }
-                         $updateStmt->close();
-                     } else {
-                         // Passt nicht mehr in die Lücke, Schleife beenden
-                         break;
-                     }
-                 }
-                 $stmt->close();
+                while ($availableSpots > 0 && $waitlistEntry = $waitlistResult->fetch_assoc()) {
+                    if ($waitlistEntry['personCount'] <= $availableSpots) {
+                        $updateStmt = $conn->prepare("UPDATE registrations SET waitlisted = 0 WHERE id = ?");
+                        $updateStmt->bind_param("i", $waitlistEntry['id']);
+                        $updateStmt->execute();
+                        $availableSpots -= $waitlistEntry['personCount'];
+                        $updateStmt->close();
+                    } else {
+                        break;
+                    }
+                }
+                $stmt->close();
             }
         }
 
-        echo json_encode(['success' => true, 'message' => 'Teilnehmer erfolgreich entfernt.']);
+        echo json_encode(['success' => $deleted, 'message' => $deleted ? 'Teilnehmer entfernt.' : 'Fehler beim Entfernen.']);
         break;
 
     case 'promoteFromWaitlist':
-        $username = trim($_POST['username'] ?? '');
-        $password = trim($_POST['password'] ?? '');
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
+        }
         $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
         $date = trim($_POST['date'] ?? '');
-
-        if (!verifyAdminLogin($username, $password)) {
-             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
-             exit;
-        }
-
-        if ($id === false || $id <= 0 || empty($date)) {
-            echo json_encode(['success' => false, 'message' => 'Ungültige oder fehlende Parameter (ID, Datum).']);
+        if ($id <= 0 || empty($date)) {
+            echo json_encode(['success' => false, 'message' => 'Ungültige Parameter.']);
             exit;
         }
 
-        // Infos über den hochzustufenden Teilnehmer holen (Anzahl Personen)
         $stmt = $conn->prepare("SELECT personCount FROM registrations WHERE id = ? AND waitlisted = 1");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $result = $stmt->get_result();
-        $promoteInfo = $result->fetch_assoc();
+        $promoteInfo = $stmt->get_result()->fetch_assoc();
         $stmt->close();
 
         if (!$promoteInfo) {
-             echo json_encode(['success' => false, 'message' => 'Teilnehmer nicht auf der Warteliste gefunden oder bereits Teilnehmer.']);
-             exit;
+            echo json_encode(['success' => false, 'message' => 'Nicht auf Warteliste.']);
+            exit;
         }
-        $personCountToPromote = $promoteInfo['personCount'];
 
-        // Prüfen, ob genug Plätze frei sind
+        $personCountToPromote = $promoteInfo['personCount'];
         $maxParticipants = getMaxParticipants();
         $currentParticipants = countParticipantsForDate($date);
 
         if (($currentParticipants + $personCountToPromote) <= $maxParticipants) {
-            // Hochstufen
             $stmt = $conn->prepare("UPDATE registrations SET waitlisted = 0 WHERE id = ?");
             $stmt->bind_param("i", $id);
-            if ($stmt->execute()) {
-                 echo json_encode(['success' => true, 'message' => 'Teilnehmer erfolgreich hochgestuft.']);
-                 error_log("Teilnehmer ID $id für Datum $date manuell hochgestuft.");
-            } else {
-                 error_log("Fehler beim manuellen Hochstufen von ID $id: (" . $stmt->errno . ") " . $stmt->error);
-                 echo json_encode(['success' => false, 'message' => 'Fehler beim Hochstufen.']);
-            }
+            $success = $stmt->execute();
             $stmt->close();
+            echo json_encode(['success' => $success, 'message' => $success ? 'Hochgestuft.' : 'Fehler beim Hochstufen.']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Nicht genügend freie Plätze (' . ($maxParticipants - $currentParticipants) . ' verfügbar) zum Hochstufen von ' . $personCountToPromote . ' Person(en).']);
+            echo json_encode(['success' => false, 'message' => 'Nicht genug Plätze.']);
         }
         break;
 
-    case 'exportData': // Exportiert ALLE Registrierungen
-        $username = trim($_POST['username'] ?? '');
-        $password = trim($_POST['password'] ?? '');
-
-        if (!verifyAdminLogin($username, $password)) {
-             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
-             exit;
+    case 'exportData':
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
         }
-
         $result = $conn->query("SELECT id, name, email, phone, date, waitlisted, registrationTime, personCount FROM registrations ORDER BY date, registrationTime");
         $data = [];
         while ($row = $result->fetch_assoc()) {
             $dateKey = $row['date'];
-            if (!isset($data[$dateKey])) {
-                $data[$dateKey] = ['participants' => [], 'waitlist' => []];
-            }
-            $row['waitlisted'] = (bool)$row['waitlisted']; // Boolean für JSON
-            if ($row['waitlisted']) {
-                $data[$dateKey]['waitlist'][] = $row;
-            } else {
-                 $data[$dateKey]['participants'][] = $row;
-            }
+            if (!isset($data[$dateKey])) $data[$dateKey] = ['participants' => [], 'waitlist' => []];
+            $row['waitlisted'] = (bool)$row['waitlisted'];
+            if ($row['waitlisted']) $data[$dateKey]['waitlist'][] = $row;
+            else $data[$dateKey]['participants'][] = $row;
         }
-
         echo json_encode(['success' => true, 'data' => $data]);
         break;
 
     case 'importData':
-        $username = trim($_POST['username'] ?? '');
-        $password = trim($_POST['password'] ?? '');
-        $jsonData = $_POST['data'] ?? '';
-
-        if (!verifyAdminLogin($username, $password)) {
-             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
-             exit;
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
         }
-
+        $jsonData = $_POST['data'] ?? '';
         if (empty($jsonData)) {
-            echo json_encode(['success' => false, 'message' => 'Keine Daten zum Importieren übermittelt.']);
+            echo json_encode(['success' => false, 'message' => 'Keine Daten.']);
             exit;
         }
 
         $importedData = json_decode($jsonData, true);
-
         if ($importedData === null || !is_array($importedData)) {
-            echo json_encode(['success' => false, 'message' => 'Ungültiges JSON-Format oder leere Daten.']);
+            echo json_encode(['success' => false, 'message' => 'Ungültiges JSON.']);
             exit;
         }
 
@@ -477,179 +331,108 @@ switch ($action) {
         $importCount = 0;
         $skipCount = 0;
 
-        try {
-            // Vorbereiten der Statements außerhalb der Schleife
-            $checkStmt = $conn->prepare("SELECT id FROM registrations WHERE email = ? AND date = ?");
-            $insertStmt = $conn->prepare("INSERT INTO registrations (name, email, phone, date, waitlisted, registrationTime, personCount) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $checkStmt = $conn->prepare("SELECT id FROM registrations WHERE email = ? AND date = ?");
+        $insertStmt = $conn->prepare("INSERT INTO registrations (name, email, phone, date, waitlisted, registrationTime, personCount) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
-            // Iteriere durch die Datenstruktur (Daten sind nach Datum gruppiert)
-            foreach ($importedData as $date => $groups) {
-                // Kombiniere Teilnehmer und Warteliste für einfachere Iteration
-                $entries = array_merge($groups['participants'] ?? [], $groups['waitlist'] ?? []);
+        foreach ($importedData as $date => $groups) {
+            $entries = array_merge($groups['participants'] ?? [], $groups['waitlist'] ?? []);
+            foreach ($entries as $entry) {
+                if (empty($entry['name']) || empty($entry['email']) || !filter_var($entry['email'], FILTER_VALIDATE_EMAIL) || empty($date)) {
+                    $skipCount++;
+                    continue;
+                }
+                $phone = $entry['phone'] ?? '';
+                $waitlisted = isset($entry['waitlisted']) ? (int)(bool)$entry['waitlisted'] : 0;
+                $personCount = filter_var($entry['personCount'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
+                $registrationTime = $entry['registrationTime'] ?? date('Y-m-d H:i:s');
 
-                foreach ($entries as $entry) {
-                     // Validierung grundlegender Felder
-                     if (empty($entry['name']) || empty($entry['email']) || !filter_var($entry['email'], FILTER_VALIDATE_EMAIL) || empty($date)) {
-                         error_log("Import übersprungen: Ungültiger Eintrag - " . json_encode($entry));
-                         $skipCount++;
-                         continue;
-                     }
-
-                     // Standardwerte setzen, falls Felder fehlen
-                     $phone = $entry['phone'] ?? '';
-                     $waitlisted = isset($entry['waitlisted']) ? (int)(bool)$entry['waitlisted'] : 0; // Sicherstellen, dass es 0 oder 1 ist
-                     $personCount = filter_var($entry['personCount'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-                     if ($personCount === false) $personCount = 1;
-                     $registrationTime = $entry['registrationTime'] ?? date('Y-m-d H:i:s');
-                     // Einfache Validierung des Zeitformats (optional, aber empfohlen)
-                     $d = DateTime::createFromFormat('Y-m-d H:i:s', $registrationTime);
-                     if (!$d || $d->format('Y-m-d H:i:s') !== $registrationTime) {
-                         $registrationTime = date('Y-m-d H:i:s'); // Fallback auf aktuelle Zeit
-                     }
-
-                    // Prüfen, ob dieser Eintrag (E-Mail + Datum) bereits existiert
-                    $checkStmt->bind_param("ss", $entry['email'], $date);
-                    $checkStmt->execute();
-                    if ($checkStmt->get_result()->num_rows === 0) {
-                        // Nicht vorhanden -> Einfügen
-                         $insertStmt->bind_param("ssssisi", $entry['name'], $entry['email'], $phone, $date, $waitlisted, $registrationTime, $personCount);
-                         if ($insertStmt->execute()) {
-                             $importCount++;
-                         } else {
-                              error_log("Importfehler (INSERT): (" . $insertStmt->errno . ") " . $insertStmt->error . " - Data: " . json_encode($entry));
-                              // Entscheiden, ob die Transaktion abgebrochen werden soll
-                              // throw new Exception("Fehler beim Einfügen eines Datensatzes.");
-                              $skipCount++; // Zähle als übersprungen
-                         }
-                    } else {
-                        // Bereits vorhanden -> Überspringen
-                        $skipCount++;
-                    }
+                $checkStmt->bind_param("ss", $entry['email'], $date);
+                $checkStmt->execute();
+                if ($checkStmt->get_result()->num_rows === 0) {
+                    $insertStmt->bind_param("ssssisi", $entry['name'], $entry['email'], $phone, $date, $waitlisted, $registrationTime, $personCount);
+                    if ($insertStmt->execute()) $importCount++;
+                    else $skipCount++;
+                } else {
+                    $skipCount++;
                 }
             }
-
-            $checkStmt->close();
-            $insertStmt->close();
-
-            $conn->commit();
-            echo json_encode(['success' => true, 'message' => "$importCount Datensätze erfolgreich importiert, $skipCount übersprungen (bereits vorhanden oder ungültig)."]);
-
-        } catch (Exception $e) {
-            $conn->rollback();
-            error_log("Import fehlgeschlagen (Transaktion Rollback): " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Fehler beim Importieren: ' . $e->getMessage()]);
         }
+
+        $checkStmt->close();
+        $insertStmt->close();
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => "$importCount importiert, $skipCount übersprungen."]);
         break;
 
     case 'updateConfig':
-        $username = trim($_POST['username'] ?? '');
-        $password = trim($_POST['password'] ?? '');
-
-        if (!verifyAdminLogin($username, $password)) {
-             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
-             exit;
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
         }
-
-        // Parameter validieren
         $maxParticipants = filter_var($_POST['maxParticipants'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         $runDay = filter_var($_POST['runDay'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 6]]);
         $runTime = trim($_POST['runTime'] ?? '');
-        // Einfache Zeitvalidierung (HH:MM)
-        if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $runTime)) {
-            $runTime = null; // Ungültige Zeit
-        }
+        if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $runTime)) $runTime = null;
 
         if ($maxParticipants === null || $runDay === null || $runTime === null) {
-             echo json_encode(['success' => false, 'message' => 'Ungültige Konfigurationswerte übermittelt.']);
-             exit;
+            echo json_encode(['success' => false, 'message' => 'Ungültige Werte.']);
+            exit;
         }
 
-        // REPLACE INTO ist praktisch: Fügt ein oder aktualisiert, wenn Key existiert.
         $stmt = $conn->prepare("REPLACE INTO config (`key`, `value`) VALUES (?, ?)");
-        $keyMax = 'max_participants';
-        $keyDay = 'run_day';
-        $keyTime = 'run_time';
-
-        $stmt->bind_param("ss", $keyMax, $maxParticipants);
-        $stmt->execute();
-        $stmt->bind_param("ss", $keyDay, $runDay);
-        $stmt->execute();
-        $stmt->bind_param("ss", $keyTime, $runTime);
-        $stmt->execute();
-
-        if ($stmt->error) {
-            error_log("Fehler beim Aktualisieren der Konfiguration: (" . $stmt->errno . ") " . $stmt->error);
-            echo json_encode(['success' => false, 'message' => 'Fehler beim Speichern der Konfiguration.']);
-        } else {
-            echo json_encode(['success' => true, 'message' => 'Konfiguration erfolgreich aktualisiert.']);
+        $keys = ['max_participants', 'run_day', 'run_time'];
+        $values = [$maxParticipants, $runDay, $runTime];
+        foreach ($keys as $i => $key) {
+            $stmt->bind_param("ss", $key, $values[$i]);
+            $stmt->execute();
         }
         $stmt->close();
+        echo json_encode(['success' => true, 'message' => 'Konfiguration aktualisiert.']);
         break;
 
     case 'getConfig':
-        // Kein Login erforderlich, da diese Infos auch im Frontend angezeigt werden (indirekt über getStats)
         $result = $conn->query("SELECT `key`, `value` FROM config");
         $config = [];
         while ($row = $result->fetch_assoc()) {
-            // Konvertiere numerische Werte für JSON
-            if ($row['key'] === 'max_participants' || $row['key'] === 'run_day') {
-                $config[$row['key']] = (int)$row['value'];
-            } else {
-                 $config[$row['key']] = $row['value'];
-            }
+            $config[$row['key']] = ($row['key'] === 'max_participants' || $row['key'] === 'run_day') ? (int)$row['value'] : $row['value'];
         }
-        // Standardwerte hinzufügen, falls nicht in DB
-        if (!isset($config['max_participants'])) $config['max_participants'] = 25;
-        if (!isset($config['run_day'])) $config['run_day'] = 4; // Donnerstag
-        if (!isset($config['run_time'])) $config['run_time'] = '19:00';
-
+        $config += ['max_participants' => 25, 'run_day' => 4, 'run_time' => '19:00'];
         echo json_encode(['success' => true, 'config' => $config]);
         break;
 
     case 'changePassword':
-        $username = trim($_POST['username'] ?? '');
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
+        }
+        $username = $_SESSION['admin_username'];
         $currentPassword = trim($_POST['currentPassword'] ?? '');
         $newPassword = trim($_POST['newPassword'] ?? '');
 
-        if (empty($username) || empty($currentPassword) || empty($newPassword)) {
-            echo json_encode(['success' => false, 'message' => 'Alle Felder müssen ausgefüllt sein.']);
+        if (empty($currentPassword) || empty($newPassword)) {
+            echo json_encode(['success' => false, 'message' => 'Alle Felder ausfüllen.']);
             exit;
         }
 
-        // Überprüfe das *aktuelle* Passwort
         if (!verifyAdminLogin($username, $currentPassword)) {
-            echo json_encode(['success' => false, 'message' => 'Aktuelles Passwort ist falsch.']);
+            echo json_encode(['success' => false, 'message' => 'Aktuelles Passwort falsch.']);
             exit;
         }
 
-        // Hash das *neue* Passwort
-        // Verwende die Standard-Optionen von PHP, die sicher sind
         $newHashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-
-        if ($newHashedPassword === false) {
-             error_log("Fehler beim Hashen des neuen Passworts für User: $username");
-             echo json_encode(['success' => false, 'message' => 'Fehler beim Verarbeiten des neuen Passworts.']);
-             exit;
-        }
-
-        // Speichere den neuen Hash in der users Tabelle
         $stmt = $conn->prepare("UPDATE users SET password_hash = ? WHERE username = ?");
         $stmt->bind_param("ss", $newHashedPassword, $username);
-
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Passwort erfolgreich geändert.']);
-        } else {
-             error_log("Fehler beim Ändern des Passworts in DB für User $username: (" . $stmt->errno . ") " . $stmt->error);
-             echo json_encode(['success' => false, 'message' => 'Fehler beim Speichern des neuen Passworts.']);
-        }
+        $success = $stmt->execute();
         $stmt->close();
+        echo json_encode(['success' => $success, 'message' => $success ? 'Passwort geändert.' : 'Fehler beim Ändern.']);
         break;
 
     default:
-        echo json_encode(['success' => false, 'message' => 'Ungültige oder fehlende Aktion.']);
+        echo json_encode(['success' => false, 'message' => 'Ungültige Aktion.']);
 }
 
-// Datenbankverbindung schließen
+// Verbindung schließen
 $conn->close();
-
 ?>
