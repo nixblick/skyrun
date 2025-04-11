@@ -15,8 +15,7 @@ Dieses System verwaltet Anmeldungen für den wöchentlichen Skyrun im MesseTurm 
 - `styles.css`: CSS-Styling.
 - `server-script.js`: JavaScript für Frontend-Logik und API-Aufrufe.
 - `api.php`: PHP-Backend für Datenverarbeitung und DB-Interaktion.
-- `config.php`: Datenbankzugang und Konfiguration.
-- `skyrun_db.sql`: SQL zur Erstellung der DB-Struktur (`registrations`, `users`, `config`, `stations`).
+- `auth.php`: Datenbankzugang und Konfiguration.
 - `.htaccess`: Schützt `config.php` vor direktem Zugriff.
 - `README.md`: Diese Dokumentation.
 
