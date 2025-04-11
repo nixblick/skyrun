@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skyrun Anmeldung</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Skyrun Anmeldung</h1>
+            <p>über 1200 Stufen | 61 Etagen | 213 Höhenmeter | Jeden Donnerstag 19:00 Uhr</p>
+        </header>
+
+        <main>
+            <section class="info">
+                <h2>Informationen zum Skyrun</h2>
+                <p>Einmal wöchentlich haben Mitglieder der Freiwilligen Feuerwehr und der Berufsfeuerwehr Frankfurt die Gelegenheit, 
+                    an einem exklusiven MesseTurm Run teilzunehmen. Dabei laufen wir entweder mit Atemschutzausrüstung, in Sportkleidung oder 
+                    in einer Kombination aus beidem. Die Teilnehmerzahl ist begrenzt.</p>
+                <div class="stats">
+                    <div class="stat">
+                        <span id="current-registrations">0</span>/<span id="max-registrations">25</span>
+                        <p>Angemeldet</p>
+                    </div>
+                    <div class="stat">
+                        <span id="current-waitlist">0</span>
+                        <p>Warteliste</p>
+                    </div>
+                    <div class="stat">
+                        <span id="days-to-run">7</span>
+                        <p>Tage bis zum nächsten Run</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="registration">
+                <h2>Anmeldung</h2>
+                <div id="registration-status" class="hidden"></div>
+                
+                <form id="skyrun-form">
+                    <div class="form-group">
+                        <label for="name">Name*:</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">E-Mail*:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Telefon (optional):</label>
+                        <input type="tel" id="phone" name="phone">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="station">Wache*:</label>
+                        <select id="station" name="station" required>
+                            <optgroup label="Berufsfeuerwehr (BF)">
+                                <option value="1 - Eckenheim">1 - Eckenheim</option>
+                                <option value="2 - Gallus">2 - Gallus</option>
+                                <option value="3 - Nied">3 - Nied</option>
+                                <option value="4 - Sachsenhausen-Nord">4 - Sachsenhausen-Nord</option>
+                                <option value="10 - Nieder-Eschbach">10 - Nieder-Eschbach</option>
+                                <option value="11 - Bergen-Enkheim">11 - Bergen-Enkheim</option>
+                                <option value="20 - Frankfurt-Flughafen">20 - Frankfurt-Flughafen</option>
+                                <option value="21 - Heddernheim">21 - Heddernheim</option>
+                                <option value="30 - Sossenheim">30 - Sossenheim</option>
+                                <option value="31 - Unterliederbach">31 - Unterliederbach</option>
+                                <option value="40 - Ostend">40 - Ostend</option>
+                                <option value="41 - Niederrad">41 - Niederrad</option>
+                                <option value="61 - IT">61 - IT</option>
+                            </optgroup>
+                            <optgroup label="Freiwillige Feuerwehr (FF)">
+                                <option value="12 - FF Bergen">12 - FF Bergen</option>
+                                <option value="13 - FF Enkheim">13 - FF Enkheim</option>
+                                <option value="14 - FF Berkersheim">14 - FF Berkersheim</option>
+                                <option value="15 - FF Bonames">15 - FF Bonames</option>
+                                <option value="16 - FF Kalbach">16 - FF Kalbach</option>
+                                <option value="17 - FF Nieder-Eschbach">17 - FF Nieder-Eschbach</option>
+                                <option value="18 - FF Nieder-Erlenbach">18 - FF Nieder-Erlenbach</option>
+                                <option value="19 - FF Harheim">19 - FF Harheim</option>
+                                <option value="22 - FF Heddernheim">22 - FF Heddernheim</option>
+                                <option value="23 - FF Eschersheim">23 - FF Eschersheim</option>
+                                <option value="24 - FF Niederursel">24 - FF Niederursel</option>
+                                <option value="25 - FF Praunheim">25 - FF Praunheim</option>
+                                <option value="26 - FF Hausen">26 - FF Hausen</option>
+                                <option value="27 - FF Ginnheim">27 - FF Ginnheim</option>
+                                <option value="28 - FF Schwanheim">28 - FF Schwanheim</option>
+                                <option value="32 - FF Rödelheim">32 - FF Rödelheim</option>
+                                <option value="33 - FF Griesheim">33 - FF Griesheim</option>
+                                <option value="34 - FF Nied">34 - FF Nied</option>
+                                <option value="35 - FF Höchst">35 - FF Höchst</option>
+                                <option value="36 - FF Unterliederbach">36 - FF Unterliederbach</option>
+                                <option value="37 - FF Zeilsheim">37 - FF Zeilsheim</option>
+                                <option value="38 - FF Sindlingen">38 - FF Sindlingen</option>
+                                <option value="39 - FF Sossenheim">39 - FF Sossenheim</option>
+                                <option value="42 - FF Niederrad">42 - FF Niederrad</option>
+                                <option value="43 - FF Sachsenhausen">43 - FF Sachsenhausen</option>
+                                <option value="44 - FF Oberrad">44 - FF Oberrad</option>
+                                <option value="45 - FF Fechenheim">45 - FF Fechenheim</option>
+                                <option value="46 - FF Seckbach">46 - FF Seckbach</option>
+                                <option value="47 - FF Rettungshundestaffel (Eckenheim)">47 - FF Rettungshundestaffel (Eckenheim)</option>
+                            </optgroup>
+                            <optgroup label="Zusätzliche">
+                                <option value="49 - Jugendfeuerwehr">49 - Jugendfeuerwehr</option>
+                                <option value="50 - Sonstige" selected>50 - Sonstige</option>
+                                <option value="OF - Langen">OF - Langen</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="person-count">Personenanzahl*:</label>
+                        <input type="number" id="person-count" name="personCount" min="1" value="1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="run-date">Datum*:</label>
+                        <select id="run-date" name="date" required>
+                            <!-- Wird durch JavaScript gefüllt -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group checkbox">
+                        <input type="checkbox" id="waitlist" name="acceptWaitlist">
+                        <label for="waitlist">Warteliste akzeptieren</label>
+                    </div>
+                    
+                    <button type="submit" id="submit-btn">Anmelden</button>
+                </form>
+            </section>
+
+            <section class="admin-panel hidden">
+                <h2>Admin-Bereich</h2>
+                <div class="form-group">
+                    <label for="admin-username">Benutzername:</label>
+                    <input type="text" id="admin-username" required>
+                    <label for="admin-password">Passwort:</label>
+                    <input type="password" id="admin-password" required>
+                    <button id="admin-login-btn">Login</button>
+                </div>
+                
+                <div id="admin-content" class="hidden">
+                    <div class="admin-tabs">
+                        <button class="tab-btn active" data-tab="participants">Teilnehmer</button>
+                        <button class="tab-btn" data-tab="waitlist">Warteliste</button>
+                        <button class="tab-btn" data-tab="export">Exportieren</button>
+                        <button class="tab-btn" data-tab="peakbook">Gipfelbuch</button>
+                        <button class="tab-btn" data-tab="settings">Einstellungen</button>
+                    </div>
+                    
+                    <div id="participants-tab" class="tab-content active">
+                        <h3>Teilnehmer</h3>
+                        <select id="admin-date-select"></select>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>E-Mail</th>
+                                    <th>Telefon</th>
+                                    <th>Wache</th>
+                                    <th>Personen</th>
+                                    <th>Aktion</th>
+                                </tr>
+                            </thead>
+                            <tbody id="participants-list"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="waitlist-tab" class="tab-content">
+                        <h3>Warteliste</h3>
+                        <select id="waitlist-date-select"></select>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>E-Mail</th>
+                                    <th>Telefon</th>
+                                    <th>Wache</th>
+                                    <th>Personen</th>
+                                    <th>Aktion</th>
+                                </tr>
+                            </thead>
+                            <tbody id="waitlist-list"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="export-tab" class="tab-content">
+                        <h3>Exportieren / Importieren</h3>
+                        <select id="export-date-select"></select>
+                        <button id="export-csv-btn">Als CSV exportieren</button>
+                        <button id="export-json-btn">Als JSON exportieren</button>
+                        
+                        <div class="import-section">
+                            <h3>Daten importieren</h3>
+                            <input type="file" id="import-json" accept=".json">
+                            <button id="import-btn">Importieren</button>
+                        </div>
+                    </div>
+                    
+                    <div id="peakbook-tab" class="tab-content">
+                        <h3>Gipfelbuch (Teilnahmen pro Wache)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Wache</th>
+                                    <th>Teilnahmen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="peakbook-list"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="settings-tab" class="tab-content">
+                        <h3>Einstellungen</h3>
+                        <form id="settings-form">
+                            <div class="form-group">
+                                <label for="max-participants">Max. Teilnehmer:</label>
+                                <input type="number" id="max-participants" min="1" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="run-day">Lauftag:</label>
+                                <select id="run-day" required>
+                                    <option value="0">Sonntag</option>
+                                    <option value="1">Montag</option>
+                                    <option value="2">Dienstag</option>
+                                    <option value="3">Mittwoch</option>
+                                    <option value="4">Donnerstag</option>
+                                    <option value="5">Freitag</option>
+                                    <option value="6">Samstag</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="run-time">Uhrzeit (HH:MM):</label>
+                                <input type="text" id="run-time" pattern="\d{2}:\d{2}" required>
+                            </div>
+                            
+                            <button type="submit" id="save-settings-btn">Speichern</button>
+                        </form>
+                        
+                        <h3>Passwort ändern</h3>
+                        <form id="password-form">
+                            <div class="form-group">
+                                <label for="current-password">Aktuelles Passwort:</label>
+                                <input type="password" id="current-password" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="new-password">Neues Passwort:</label>
+                                <input type="password" id="new-password" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="confirm-password">Passwort bestätigen:</label>
+                                <input type="password" id="confirm-password" required>
+                            </div>
+                            
+                            <button type="submit" id="change-password-btn">Ändern</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <a href="#" id="show-admin">Admin-Bereich</a>
+        </footer>
+    </div>
+
+    <div id="confirmation-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Anmeldung bestätigt</h2>
+            <p id="confirmation-message"></p>
+            <button id="close-modal-btn">Schließen</button>
+        </div>
+    </div>
+
+    <script src="server-script.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Ignoriert alle SQL-Backup-Dateien
+*.sql
+*.log
+
+# Ignoriert PHP-Fehlerprotokolle
+php_errors.log
+
+# Ignoriert Visual Studio Code Workspace-Dateien
+*.code-workspace
+
+# Ignoriert Konfigurationsdateien, die sensible Informationen enthalten könnten
+config.php
+
+# Ignoriert alle anderen Dateien, die nicht getrackt werden sollen
+# (fügen Sie hier spezifische Dateien oder Verzeichnisse hinzu, falls nötig)
+backup_db.php
+create_backup.php
+wachen.txt

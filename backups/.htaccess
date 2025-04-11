@@ -1,0 +1,7 @@
+# Verhindert direkten Zugriff auf SQL-Dateien
+<FilesMatch "\.sql$">
+    Require all denied
+</FilesMatch>
+
+# Verhindert das Auflisten von Verzeichnisinhalten
+Options -Indexes
