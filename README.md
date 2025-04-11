@@ -1,141 +1,128 @@
-# Skyrun Registration System (Serverbasierte Version)
+# Skyrun Anmeldesystem (PHP/MySQL)
 
-Dieses System ermöglicht die Verwaltung von Anmeldungen für einen wöchentlichen Skyrun in einem Hochhaus. Es erlaubt maximal 25 Teilnehmer pro Woche und bietet eine Warteliste für zusätzliche Anmeldungen. Diese Version verwendet PHP zur serverseitigen Speicherung der Daten in einer JSON-Datei.
+Dieses System verwaltet Anmeldungen für den wöchentlichen Skyrun im MesseTurm Frankfurt mit konfigurierbarer Teilnehmerzahl und Warteliste.
 
 ## Funktionen
 
-- Anmeldung für den Skyrun mit Name, E-Mail-Adresse und optionaler Telefonnummer
-- Verwaltung von maximal 25 Teilnehmern pro Woche
-- Automatische Warteliste für zusätzliche Anmeldungen
-- Automatische Hochstufung von Personen auf der Warteliste, wenn Plätze frei werden
-- Admin-Bereich mit Passwortschutz zum Verwalten von Teilnehmern und Warteliste
-- Export- und Import-Funktionen für Teilnehmerdaten
-- Responsive Design für Desktop und mobile Geräte
-- **Zentrale Datenspeicherung auf dem Server**
+- **Anmeldung**: Name, E-Mail, optional Telefon, Personenanzahl und Datum.
+- **Konfiguration**: Maximale Teilnehmerzahl (Standard: 25), Wochentag und Uhrzeit des Laufs.
+- **Warteliste**: Automatisch bei Überbuchung (optional wählbar); automatische Hochstufung bei freien Plätzen.
+- **Admin-Bereich**: Login-geschützt; Verwaltung von Teilnehmern/Warteliste, Entfernen/Hochstufen, Export (CSV/JSON), Import (JSON), Einstellungen (Max. Teilnehmer, Lauftag/-zeit), Passwortänderung.
+- **Design**: Responsiv für Desktop und Mobile.
 
-## Verzeichnisstruktur
+## Dateien
 
-- `index.html`: Die Hauptseite der Anwendung
-- `styles.css`: Stile für die Webseite
-- `server-script.js`: JavaScript für die Interaktion mit dem PHP-Backend
-- `api.php`: PHP-Backend zur Datenverwaltung
-- `registrations.json`: Datei zur serverseitigen Speicherung der Anmeldungen (wird automatisch erstellt)
-- `README.md`: Diese Dokumentation
+- `index.html`: Frontend-Hauptseite.
+- `styles.css`: CSS-Styling.
+- `server-script.js`: JavaScript für Frontend-Logik und API-Aufrufe.
+- `api.php`: PHP-Backend für Datenverarbeitung und DB-Interaktion.
+- `config.php`: Datenbankzugang und Konfiguration.
+- `skyrun_db.sql`: SQL zur Erstellung der DB-Struktur (`registrations`, `users`, `config`).
+- `.htaccess`: Schützt `config.php` vor direktem Zugriff.
+- `README.md`: Diese Dokumentation.
+- `test.php`: Überbleibsel, nicht Teil der Kernanwendung.
 
 ## Voraussetzungen
 
-- Ein Webserver mit PHP 7.0 oder höher
-- Schreibrechte für das Verzeichnis, in dem die `registrations.json` gespeichert wird
+- Webserver mit PHP ≥ 7.4 (für `??`-Operator, `password_hash` etc.).
+- MySQL/MariaDB-Datenbank.
+- Schreibrechte für Fehlerlogging (falls in `config.php` aktiviert).
 
-## Installation und Ausführung
+## Installation
 
-1. Laden Sie alle Dateien auf Ihren Webserver hoch
-2. Stellen Sie sicher, dass das Verzeichnis, in dem sich die Dateien befinden, Schreibrechte für PHP hat (für die `registrations.json`-Datei)
-3. Öffnen Sie die Website in Ihrem Browser
+1. **Datenbank einrichten**:
+   - Neue Datenbank erstellen oder bestehende nutzen.
+   - `skyrun_db.sql` importieren (erstellt Tabellen und Standardwerte).
 
-## Wichtige Sicherheitshinweise
+2. **Konfiguration anpassen**:
+   - `config.php` öffnen und Datenbankdetails (`DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`) eintragen.
+   - `TIMEZONE` prüfen/anpassen (z.B. `Europe/Berlin`).
 
-- **Das Standard-Admin-Passwort in `api.php` ist "skyrun2025"**. Ändern Sie dieses unbedingt für den produktiven Einsatz!
-- Die Datei `registrations.json` sollte nicht direkt über HTTP erreichbar sein. Konfigurieren Sie Ihren Webserver entsprechend oder platzieren Sie die Datei außerhalb des Webroot-Verzeichnisses.
+3. **Admin-Benutzer anlegen**:
+   - **Via PHP CLI**: `php -r "echo password_hash('DEIN_PASSWORT', PASSWORD_DEFAULT);"` → Hash kopieren.
+   - **SQL ausführen**: `INSERT INTO users (username, password_hash) VALUES ('admin', 'HASH_HIER');`.
+   - Alternativ: Online PHP Sandbox nutzen (z.B. phpfiddle.org).
+
+4. **Dateien hochladen**:
+   - Alle Dateien (außer `test.php`) in ein Webserver-Verzeichnis laden.
+
+5. **Berechtigungen setzen**:
+   - Leserechte für Webserver auf alle Dateien.
+   - Schreibrechte für Fehlerlog-Verzeichnis (falls `ENABLE_ERROR_LOGGING = true`).
+   - `.htaccess` aktiviert? (Apache: `AllowOverride All`).
+
+6. **Starten**:
+   - `index.html` im Browser aufrufen.
+
+## Zugangsdaten und Konfiguration
+
+- **Datenbank**: In `config.php` definiert.
+- **Admin**:
+  - Benutzername: Z.B. `admin` (via `users`-Tabelle).
+  - Passwort: Bei Installation gesetzt, änderbar im Admin-Bereich.
+- **System** (in `config`-Tabelle, via Admin-Bereich editierbar):
+  - `max_participants`: Standard 25.
+  - `run_day`: 0-6 (Sonntag-Samstag, Standard: 4 = Donnerstag).
+  - `run_time`: HH:MM (Standard: `19:00`).
 
 ## Benutzeranleitung
 
-### Für Teilnehmer:
+### Teilnehmer
+- Formular ausfüllen, Datum wählen, „Anmelden“ klicken → Bestätigung/Wartelisten-Info.
 
-1. Öffnen Sie die Webseite
-2. Füllen Sie das Anmeldeformular aus (Name, E-Mail, optional Telefonnummer)
-3. Wählen Sie ein Datum für Ihren Skyrun
-4. Aktivieren Sie die Warteliste-Option, falls Sie auch auf die Warteliste gesetzt werden möchten, wenn alle Plätze belegt sind
-5. Klicken Sie auf "Anmelden"
-6. Eine Bestätigung erscheint nach erfolgreicher Anmeldung
-
-### Für Administratoren:
-
-1. Klicken Sie auf "Admin-Bereich" im Footer der Seite
-2. Geben Sie das Admin-Passwort ein (standardmäßig "skyrun2025", sollte geändert werden)
-3. Nach erfolgreicher Anmeldung haben Sie Zugriff auf drei Tabs:
-   - **Teilnehmer**: Zeigt alle angemeldeten Teilnehmer für das ausgewählte Datum an
-   - **Warteliste**: Zeigt alle Personen auf der Warteliste für das ausgewählte Datum an
-   - **Exportieren**: Ermöglicht den Export der Teilnehmerdaten als CSV oder JSON sowie den Import von zuvor exportierten Daten
-
-4. Im Teilnehmer-Tab können Sie:
-   - Alle angemeldeten Teilnehmer sehen
-   - Teilnehmer entfernen (wodurch automatisch der nächste auf der Warteliste hochgestuft wird)
-
-5. Im Warteliste-Tab können Sie:
-   - Alle Personen auf der Warteliste sehen
-   - Personen manuell hochstufen
-   - Personen von der Warteliste entfernen
-
-6. Im Exportieren-Tab können Sie:
-   - Daten als CSV exportieren (für Excel oder andere Tabellenkalkulationen)
-   - Daten als JSON exportieren (für Backups)
-   - Zuvor exportierte JSON-Daten importieren
-
-## Datenspeicherung
-
-Alle Daten werden in der Datei `registrations.json` auf dem Server gespeichert:
-
-- Die Daten werden zentral verwaltet und sind für alle Benutzer konsistent
-- Änderungen sind sofort für alle sichtbar
-- Die Datei sollte regelmäßig gesichert werden, um Datenverlust zu vermeiden
-
-## Anpassungen
-
-### Admin-Passwort ändern
-
-Öffnen Sie die Datei `api.php` und ändern Sie die folgende Zeile:
-
-```php
-$adminPassword = 'skyrun2025'; // Ändern Sie dies zu einem sicheren Passwort
-```
-
-### Maximale Teilnehmerzahl ändern
-
-Die maximale Teilnehmerzahl ist in der Datei `api.php` festgelegt. Suchen Sie nach dem folgenden Code und ändern Sie die Zahl 25:
-
-```php
-if ($participantsCount >= 25) {
-    // ...
-}
-```
-
-Ebenso in `server-script.js`:
-
-```javascript
-const MAX_PARTICIPANTS = 25;
-```
-
-### Wochentag des Runs ändern
-
-Der Wochentag (standardmäßig Donnerstag) kann in der Funktion `generateRunDates()` in `server-script.js` angepasst werden.
+### Administratoren
+1. Footer-Link „Admin-Bereich“ klicken.
+2. Mit Benutzername/Passwort einloggen.
+3. Tabs:
+   - **Teilnehmer**: Liste anzeigen/entfernen.
+   - **Warteliste**: Hochstufen/entfernen.
+   - **Exportieren**: CSV (pro Datum), JSON (alles), Import (JSON).
+   - **Einstellungen**: Max. Teilnehmer, Lauftag/-zeit, Passwort ändern.
 
 ## Fehlerbehebung
 
-### Problem: Die Daten werden nicht gespeichert
+### Datenbankverbindung fehlt
+- `config.php` prüfen (Host, User, Passwort, DB-Name).
+- DB-Benutzerrechte checken (SELECT, INSERT, UPDATE, DELETE).
 
-- Überprüfen Sie, ob PHP Schreibrechte für das Verzeichnis hat
-- Stellen Sie sicher, dass genügend Speicherplatz vorhanden ist
-- Überprüfen Sie die PHP-Fehlerprotokolle
+### Admin-Login fehlgeschlagen
+- `users`-Tabelle prüfen (Benutzer vorhanden?).
+- Passwort korrekt? (Hash neu generieren: `UPDATE users SET password_hash = 'NEUER_HASH' WHERE username = 'admin';`).
 
-### Problem: Admin-Login funktioniert nicht
+### Termine/Statistik falsch
+- Browser-Cache leeren (Strg+Shift+R).
+- `run_day`/`run_time` im Admin-Bereich prüfen.
+- `TIMEZONE` in `config.php` mit Serverzeit abgleichen.
+- `php_errors.log` checken.
 
-- Überprüfen Sie, ob das richtige Passwort verwendet wird
-- Stellen Sie sicher, dass JavaScript im Browser aktiviert ist
-- Überprüfen Sie die Browser-Konsole auf Fehler
+### Admin wird nach Login ausgeloggt
+- **Symptom**: Login erfolgreich, Admin-Bereich erscheint kurz, dann Login-Maske zurück.
+- **Ursache**: Zweiter API-Aufruf (z.B. `getParticipants`) scheitert bei Authentifizierung → `handleLogout()` wird aufgerufen.
+- **Debugging**:
+  1. Browser-Konsole (F12 → Console) prüfen:
+     - Logs von `handleAdminLogin` und `updateParticipantsList`.
+     - Werden `tempAdminUser`/`tempAdminPass` korrekt gesendet?
+  2. Server-Logs (`php_errors.log`) checken:
+     - `POST`-Daten bei `adminLogin` vs. `getParticipants` vergleichen.
+  3. Test mit einfachem Passwort (z.B. `admin123`), falls Sonderzeichen Probleme machen.
+- **Mögliche Fixes**:
+  - Sicherstellen, dass `tempAdminUser`/`tempAdminPass` nicht überschrieben werden.
+  - API-Logik prüfen: Warum schlägt `verifyAdminLogin` beim zweiten Aufruf fehl?
 
 ## Technische Details
 
-- **Frontend:** HTML5, CSS3, JavaScript (ES6+)
-- **Backend:** PHP
-- **Datenspeicherung:** JSON-Datei auf dem Server
-- **Kommunikation:** Fetch API für AJAX-Anfragen
-- **Kompatibilität:** Unterstützt alle modernen Browser (Chrome, Firefox, Safari, Edge)
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+, Fetch API).
+- **Backend**: PHP ≥ 7.4, MySQL/MariaDB.
+- **Authentifizierung**: Passwort-Hash (BCRYPT) in `users`-Tabelle, keine Sessions/Tokens (unsicher ohne HTTPS!).
+- **Konfiguration**: DB-Zugang in `config.php`, Lauf-Parameter in `config`-Tabelle.
 
-## Autor
+## Sicherheitshinweise
 
-Ihr Name
+- **HTTPS zwingend**: Passwörter werden im JS temporär gehalten → MITM-Risiko ohne SSL.
+- **Starkes Passwort**: Regelmäßig ändern.
+- **Dateischutz**: `config.php` via `.htaccess` oder Serverkonfig sichern.
+- **Validierung**: Serverseitig in `api.php` vorhanden, ggf. erweitern.
 
 ## Lizenz
 
-Dieses Projekt ist unter der MIT-Lizenz lizenziert.
+MIT Lizenz
