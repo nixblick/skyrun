@@ -3,19 +3,36 @@ on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
-
 jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger backup creation
+      - name: Create backup trigger file
         run: |
-          echo "Triggering backup..."
-          curl -f "https://mein-computerfreund.de/create_backup.php?token=${{ secrets.BACKUP_TOKEN }}" || { echo "Backup trigger failed"; exit 1; }
+          mkdir -p temp_backup
+          echo "<?php" > temp_backup/run_backup.php
+          echo "// Backup ausführen" >> temp_backup/run_backup.php
+          echo "// Automatisch erstellt: $(date)" >> temp_backup/run_backup.php
+          echo "require_once 'backup_db.php';" >> temp_backup/run_backup.php
+          echo "?>" >> temp_backup/run_backup.php
 
       - name: Install sshpass
-        run: sudo apt-get update && sudo apt-get install -y sshpass
-
+        run: sudo apt-get install -y sshpass
+      
+      - name: SFTP Upload trigger file
+        env:
+          SSHPASS: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          sshpass -e sftp -o StrictHostKeyChecking=no -P 2222 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} << EOF
+          cd /htdocs/html/skyrun/
+          lcd temp_backup
+          put run_backup.php
+          bye
+          EOF
+      
+      - name: Sleep for backup execution
+        run: sleep 30
+      
       - name: Check FTPS backups
         env:
           SSHPASS: ${{ secrets.FTP_PASSWORD }}
@@ -24,5 +41,15 @@ jobs:
           sshpass -e sftp -o StrictHostKeyChecking=no -P 2222 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} << EOF
           cd /htdocs/html/skyrun/backups
           ls -l
+          bye
+          EOF
+      
+      - name: Cleanup trigger file
+        env:
+          SSHPASS: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          sshpass -e sftp -o StrictHostKeyChecking=no -P 2222 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} << EOF
+          cd /htdocs/html/skyrun/
+          rm run_backup.php
           bye
           EOF
