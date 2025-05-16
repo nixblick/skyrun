@@ -9,7 +9,7 @@
 session_start();
 
 // Einbinden der benötigten Module
-require_once '../config.php';
+require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 require_once 'utils.php';
