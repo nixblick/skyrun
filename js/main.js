@@ -6,7 +6,8 @@
 
 (function() {
     // Globale Variablen
-    const API_URL = 'api/';
+    //const API_URL = 'api/';
+    const API_URL = 'api.php';
     let config = { maxParticipants: 25, runDay: 4, runTime: '19:00' };
     
     // DOM-Elemente
