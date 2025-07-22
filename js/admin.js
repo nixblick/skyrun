@@ -1,6 +1,6 @@
 /**
  * /js/admin.js
- * Version: 1.0.0
+ * Version: 1.1.0
  * Admin-related functionality
  */
 
@@ -393,6 +393,7 @@
         const maxParticipants = parseInt(document.getElementById('max-participants').value);
         const runDay = parseInt(document.getElementById('run-day').value);
         const runTime = document.getElementById('run-time').value;
+        const runFrequency = document.getElementById('run-frequency').value; // Neu
 
         if (isNaN(maxParticipants) || maxParticipants < 1 || isNaN(runDay) || !/^\d{2}:\d{2}$/.test(runTime)) {
             alert('Ungültige Werte.');
@@ -404,6 +405,7 @@
         formData.append('maxParticipants', maxParticipants);
         formData.append('runDay', runDay);
         formData.append('runTime', runTime);
+        formData.append('runFrequency', runFrequency); // Neu
 
         const saveButton = document.getElementById('save-settings-btn');
         saveButton.disabled = true;
@@ -421,6 +423,7 @@
                 window.skyrunApp.config.maxParticipants = maxParticipants;
                 window.skyrunApp.config.runDay = runDay;
                 window.skyrunApp.config.runTime = runTime;
+                window.skyrunApp.config.runFrequency = runFrequency; // Neu
                 document.getElementById('max-registrations').textContent = maxParticipants;
                 window.skyrunApp.generateRunDates();
                 window.skyrunApp.updateStatistics();
