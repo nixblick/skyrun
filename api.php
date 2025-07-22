@@ -436,7 +436,10 @@ switch ($action) {
         $maxParticipants = filter_var($_POST['maxParticipants'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         $runDay = filter_var($_POST['runDay'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 6]]);
         $runTime = trim($_POST['runTime'] ?? '');
+        $runFrequency = trim($_POST['runFrequency'] ?? 'weekly'); // Neu
+        
         if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $runTime)) $runTime = null;
+        if (!in_array($runFrequency, ['weekly', 'monthly_first'])) $runFrequency = 'weekly';
 
         if ($maxParticipants === null || $runDay === null || $runTime === null) {
             echo json_encode(['success' => false, 'message' => 'Ungültige Werte.']);
@@ -444,8 +447,8 @@ switch ($action) {
         }
 
         $stmt = $conn->prepare("REPLACE INTO config (`key`, `value`) VALUES (?, ?)");
-        $keys = ['max_participants', 'run_day', 'run_time'];
-        $values = [$maxParticipants, $runDay, $runTime];
+        $keys = ['max_participants', 'run_day', 'run_time', 'run_frequency'];
+        $values = [$maxParticipants, $runDay, $runTime, $runFrequency];
         foreach ($keys as $i => $key) {
             $stmt->bind_param("ss", $key, $values[$i]);
             $stmt->execute();
@@ -460,7 +463,13 @@ switch ($action) {
         while ($row = $result->fetch_assoc()) {
             $config[$row['key']] = ($row['key'] === 'max_participants' || $row['key'] === 'run_day') ? (int)$row['value'] : $row['value'];
         }
-        $config += ['max_participants' => 25, 'run_day' => 4, 'run_time' => '19:00'];
+        // Default-Werte setzen
+        $config += [
+            'max_participants' => 25, 
+            'run_day' => 4, 
+            'run_time' => '19:00',
+            'run_frequency' => 'weekly'  // Neuer Default
+        ];
         echo json_encode(['success' => true, 'config' => $config]);
         break;
 
