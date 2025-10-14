@@ -280,7 +280,10 @@
             <button id="close-modal-btn">Schließen</button>
         </div>
     </div>
-
+<!-- Honeypot - nicht sichtbar für User, Bots füllen es aus -->
+<div style="position: absolute; left: -9999px;">
+    <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+</div>
     <!-- JavaScript-Dateien einbinden -->
     <script src="js/utils.js"></script>
     <script src="js/main.js"></script>
