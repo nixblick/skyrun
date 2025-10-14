@@ -117,6 +117,12 @@ switch ($action) {
         break;
 
     case 'register':
+    // Honeypot-Check
+if (!empty($_POST['website'])) {
+    error_log("Spam erkannt: website-Feld gefüllt von IP: " . $_SERVER['REMOTE_ADDR']);
+    echo json_encode(['success' => false, 'message' => 'Registrierung fehlgeschlagen.']);
+    exit;
+}
         $name = trim($_POST['name'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
