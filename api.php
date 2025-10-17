@@ -5,6 +5,35 @@ require_once 'config.php';
 // Session starten
 session_start();
 
+// CAPTCHA generieren
+function generateCaptcha() {
+    $num1 = rand(1, 10);
+    $num2 = rand(1, 10);
+    $_SESSION['captcha_answer'] = $num1 + $num2;
+    $_SESSION['captcha_time'] = time();
+    return ['num1' => $num1, 'num2' => $num2];
+}
+
+// CAPTCHA validieren
+function validateCaptcha($answer) {
+    if (!isset($_SESSION['captcha_answer']) || !isset($_SESSION['captcha_time'])) {
+        return false;
+    }
+
+    // CAPTCHA nach 10 Minuten abgelaufen
+    if (time() - $_SESSION['captcha_time'] > 600) {
+        return false;
+    }
+
+    $isValid = (int)$answer === (int)$_SESSION['captcha_answer'];
+
+    // CAPTCHA nach Verwendung löschen
+    unset($_SESSION['captcha_answer']);
+    unset($_SESSION['captcha_time']);
+
+    return $isValid;
+}
+
 // CORS-Header
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -101,6 +130,11 @@ if (!empty($_POST)) {
 }
 
 switch ($action) {
+    case 'getCaptcha':
+        $captcha = generateCaptcha();
+        echo json_encode(['success' => true, 'captcha' => $captcha]);
+        break;
+
     case 'getStations':
         $result = $conn->query("SELECT id, code, name, type FROM stations ORDER BY type, sort_order");
         $stations = [];
@@ -117,12 +151,20 @@ switch ($action) {
         break;
 
     case 'register':
-    // Honeypot-Check
-if (!empty($_POST['website'])) {
-    error_log("Spam erkannt: website-Feld gefüllt von IP: " . $_SERVER['REMOTE_ADDR']);
-    echo json_encode(['success' => false, 'message' => 'Registrierung fehlgeschlagen.']);
-    exit;
-}
+        // Honeypot-Check
+        if (!empty($_POST['website'])) {
+            error_log("Spam erkannt: website-Feld gefüllt von IP: " . $_SERVER['REMOTE_ADDR']);
+            echo json_encode(['success' => false, 'message' => 'Registrierung fehlgeschlagen.']);
+            exit;
+        }
+
+        // CAPTCHA-Validierung
+        $captchaAnswer = trim($_POST['captcha'] ?? '');
+        if (!validateCaptcha($captchaAnswer)) {
+            echo json_encode(['success' => false, 'message' => 'CAPTCHA falsch oder abgelaufen.']);
+            exit;
+        }
+
         $name = trim($_POST['name'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
