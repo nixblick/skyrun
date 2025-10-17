@@ -7,14 +7,31 @@
 (function() {
     // Auf skyrunApp zugreifen
     const { API_URL, showStatus } = window.skyrunApp || {};
-    
+
     // DOM-Elemente
     const form = document.getElementById('skyrun-form');
     const runDateSelect = document.getElementById('run-date');
     const personCountInput = document.getElementById('person-count');
     const confirmationModal = document.getElementById('confirmation-modal');
     const confirmationMessage = document.getElementById('confirmation-message');
-    
+    const captchaQuestion = document.getElementById('captcha-question');
+
+    // CAPTCHA beim Laden generieren
+    async function loadCaptcha() {
+        try {
+            const response = await fetch(`${API_URL}?action=getCaptcha`);
+            const result = await response.json();
+            if (result.success) {
+                captchaQuestion.textContent = `Was ist ${result.captcha.num1} + ${result.captcha.num2}?`;
+            }
+        } catch (error) {
+            console.error('CAPTCHA Fehler:', error);
+        }
+    }
+
+    // CAPTCHA initial laden
+    loadCaptcha();
+
     // Anmeldeformular verarbeiten
     async function handleRegistration(e) {
         e.preventDefault();
@@ -25,8 +42,9 @@
         const personCount = parseInt(personCountInput.value);
         const date = runDateSelect.value;
         const acceptWaitlist = document.getElementById('waitlist').checked;
+        const captcha = document.getElementById('captcha').value.trim();
 
-        if (!name || !email || !station || !date || isNaN(personCount) || personCount < 1 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (!name || !email || !station || !date || !captcha || isNaN(personCount) || personCount < 1 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             showStatus('Bitte alle Pflichtfelder korrekt ausfüllen.', 'error');
             return;
         }
@@ -40,6 +58,7 @@
         formData.append('date', date);
         formData.append('acceptWaitlist', acceptWaitlist);
         formData.append('personCount', personCount);
+        formData.append('captcha', captcha);
 
         const submitButton = document.getElementById('submit-btn');
         submitButton.disabled = true;
@@ -52,6 +71,7 @@
             if (result.success) {
                 form.reset();
                 personCountInput.value = 1;
+                loadCaptcha(); // Neues CAPTCHA laden
                 window.skyrunApp.updateStatistics();
                 const personText = personCount === 1 ? 'Person' : 'Personen';
                 const formattedDate = window.skyrunApp.formatDate(new Date(date + 'T00:00:00'));
@@ -61,6 +81,7 @@
                 confirmationModal.classList.remove('hidden');
             } else {
                 showStatus(result.message || 'Fehler bei der Anmeldung.', 'error');
+                loadCaptcha(); // Neues CAPTCHA bei Fehler
             }
         } catch (error) {
             showStatus('Netzwerkfehler.', 'error');
