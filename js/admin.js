@@ -94,6 +94,7 @@
         if (adminAuthenticated) {
             if (tabName === 'participants') updateParticipantsList();
             else if (tabName === 'waitlist') updateWaitlistTable();
+            else if (tabName === 'dates') loadTrainingDates();
             else if (tabName === 'peakbook') updatePeakBook();
         }
     }
@@ -391,11 +392,8 @@
     async function saveSettings() {
         if (!adminAuthenticated) return;
         const maxParticipants = parseInt(document.getElementById('max-participants').value);
-        const runDay = parseInt(document.getElementById('run-day').value);
-        const runTime = document.getElementById('run-time').value;
-        const runFrequency = document.getElementById('run-frequency').value; // Neu
 
-        if (isNaN(maxParticipants) || maxParticipants < 1 || isNaN(runDay) || !/^\d{2}:\d{2}$/.test(runTime)) {
+        if (isNaN(maxParticipants) || maxParticipants < 1) {
             alert('Ungültige Werte.');
             return;
         }
@@ -403,9 +401,8 @@
         const formData = new FormData();
         formData.append('action', 'updateConfig');
         formData.append('maxParticipants', maxParticipants);
-        formData.append('runDay', runDay);
-        formData.append('runTime', runTime);
-        formData.append('runFrequency', runFrequency); // Neu
+        formData.append('runDay', 4); // Dummy-Wert für Kompatibilität
+        formData.append('runTime', '19:00'); // Dummy-Wert für Kompatibilität
 
         const saveButton = document.getElementById('save-settings-btn');
         saveButton.disabled = true;
@@ -421,11 +418,7 @@
             if (result.success) {
                 alert('Einstellungen gespeichert.');
                 window.skyrunApp.config.maxParticipants = maxParticipants;
-                window.skyrunApp.config.runDay = runDay;
-                window.skyrunApp.config.runTime = runTime;
-                window.skyrunApp.config.runFrequency = runFrequency; // Neu
                 document.getElementById('max-registrations').textContent = maxParticipants;
-                window.skyrunApp.generateRunDates();
                 window.skyrunApp.updateStatistics();
             } else {
                 alert('Fehler: ' + result.message);
@@ -434,6 +427,113 @@
             alert('Speicherfehler.');
         } finally {
             saveButton.disabled = false;
+        }
+    }
+
+    // Trainingstermine laden und anzeigen
+    async function loadTrainingDates() {
+        if (!adminAuthenticated) return;
+        const datesListBody = document.getElementById('dates-list');
+        datesListBody.innerHTML = '<tr><td colspan="3">Lade Termine...</td></tr>';
+
+        try {
+            const response = await fetch(`${API_URL}?action=getTrainingDates`);
+            if (!response.ok) throw new Error('HTTP Fehler');
+            const result = await response.json();
+
+            datesListBody.innerHTML = '';
+            if (result.success && result.dates.length > 0) {
+                result.dates.forEach(dateInfo => {
+                    const row = datesListBody.insertRow();
+                    const dateObj = new Date(dateInfo.date + 'T00:00:00');
+                    const formattedDate = dateObj.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+                    row.innerHTML = `
+                        <td>${formattedDate}</td>
+                        <td>${dateInfo.time} Uhr</td>
+                        <td><button class="action-btn remove-btn" data-id="${dateInfo.id}">Löschen</button></td>
+                    `;
+                    row.querySelector('.remove-btn').addEventListener('click', () => deleteTrainingDate(dateInfo.id));
+                });
+            } else {
+                datesListBody.innerHTML = '<tr><td colspan="3">Keine Termine vorhanden</td></tr>';
+            }
+        } catch (error) {
+            datesListBody.innerHTML = '<tr><td colspan="3">Fehler beim Laden</td></tr>';
+            console.error('Fehler:', error);
+        }
+    }
+
+    // Neuen Trainingstermin hinzufügen
+    async function addTrainingDate() {
+        if (!adminAuthenticated) return;
+        const dateInput = document.getElementById('new-date');
+        const timeInput = document.getElementById('new-time');
+
+        const date = dateInput.value;
+        const time = timeInput.value;
+
+        if (!date || !time) {
+            alert('Bitte Datum und Uhrzeit angeben.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('action', 'addTrainingDate');
+        formData.append('date', date);
+        formData.append('time', time);
+
+        const addButton = document.getElementById('add-date-btn');
+        addButton.disabled = true;
+
+        try {
+            const response = await fetch(API_URL, { method: 'POST', body: formData });
+            if (!response.ok) {
+                if (response.status === 401) handleAdminLogout();
+                throw new Error('HTTP Fehler');
+            }
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Termin hinzugefügt.');
+                dateInput.value = '';
+                loadTrainingDates();
+                window.skyrunApp.generateRunDates();
+            } else {
+                alert('Fehler: ' + result.message);
+            }
+        } catch (error) {
+            alert('Fehler beim Hinzufügen.');
+        } finally {
+            addButton.disabled = false;
+        }
+    }
+
+    // Trainingstermin löschen
+    async function deleteTrainingDate(id) {
+        if (!adminAuthenticated || !confirm('Termin wirklich löschen?')) return;
+
+        const formData = new FormData();
+        formData.append('action', 'deleteTrainingDate');
+        formData.append('id', id);
+
+        try {
+            const response = await fetch(API_URL, { method: 'POST', body: formData });
+            if (!response.ok) {
+                if (response.status === 401) handleAdminLogout();
+                throw new Error('HTTP Fehler');
+            }
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Termin gelöscht.');
+                loadTrainingDates();
+                window.skyrunApp.generateRunDates();
+            } else {
+                alert('Fehler: ' + result.message);
+            }
+        } catch (error) {
+            alert('Fehler beim Löschen.');
         }
     }
     
@@ -498,4 +598,8 @@
     
     if (settingsForm) settingsForm.addEventListener('submit', e => { e.preventDefault(); saveSettings(); });
     if (passwordForm) passwordForm.addEventListener('submit', e => { e.preventDefault(); changePassword(); });
+
+    // Termin-Verwaltung Event-Listener
+    const addDateBtn = document.getElementById('add-date-btn');
+    if (addDateBtn) addDateBtn.addEventListener('click', addTrainingDate);
 })();

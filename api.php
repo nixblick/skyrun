@@ -576,6 +576,108 @@ switch ($action) {
         echo json_encode(['success' => true, 'peakBook' => $peakBook]);
         break;
 
+    case 'getTrainingDates':
+        // Alle zukünftigen Termine abrufen (öffentlich)
+        $stmt = $conn->prepare("SELECT id, date, TIME_FORMAT(time, '%H:%i') as time FROM training_dates WHERE date >= CURDATE() ORDER BY date ASC");
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $dates = [];
+        while ($row = $result->fetch_assoc()) {
+            $dates[] = [
+                'id' => (int)$row['id'],
+                'date' => $row['date'],
+                'time' => $row['time']
+            ];
+        }
+        $stmt->close();
+        echo json_encode(['success' => true, 'dates' => $dates]);
+        break;
+
+    case 'addTrainingDate':
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
+        }
+        $date = trim($_POST['date'] ?? '');
+        $time = trim($_POST['time'] ?? '19:00');
+
+        if (empty($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            echo json_encode(['success' => false, 'message' => 'Ungültiges Datum.']);
+            exit;
+        }
+        if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $time)) {
+            echo json_encode(['success' => false, 'message' => 'Ungültige Uhrzeit.']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("INSERT INTO training_dates (date, time) VALUES (?, ?)");
+        $stmt->bind_param("ss", $date, $time);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Termin hinzugefügt.', 'id' => $stmt->insert_id]);
+        } else {
+            if ($conn->errno == 1062) {
+                echo json_encode(['success' => false, 'message' => 'Dieses Datum existiert bereits.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Fehler beim Hinzufügen.']);
+            }
+        }
+        $stmt->close();
+        break;
+
+    case 'updateTrainingDate':
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
+        }
+        $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
+        $date = trim($_POST['date'] ?? '');
+        $time = trim($_POST['time'] ?? '19:00');
+
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Ungültige ID.']);
+            exit;
+        }
+        if (empty($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            echo json_encode(['success' => false, 'message' => 'Ungültiges Datum.']);
+            exit;
+        }
+        if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $time)) {
+            echo json_encode(['success' => false, 'message' => 'Ungültige Uhrzeit.']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("UPDATE training_dates SET date = ?, time = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $date, $time, $id);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        echo json_encode(['success' => $success, 'message' => $success ? 'Termin aktualisiert.' : 'Fehler beim Aktualisieren.']);
+        break;
+
+    case 'deleteTrainingDate':
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
+        }
+        $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
+
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Ungültige ID.']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("DELETE FROM training_dates WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        echo json_encode(['success' => $success, 'message' => $success ? 'Termin gelöscht.' : 'Fehler beim Löschen.']);
+        break;
+
     default:
         echo json_encode(['success' => false, 'message' => 'Ungültige Aktion.']);
 }
