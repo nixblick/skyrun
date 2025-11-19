@@ -15,21 +15,19 @@
     const maxRegistrationsEl = document.getElementById('max-registrations');
     const currentWaitlistEl = document.getElementById('current-waitlist');
     const daysToRunEl = document.getElementById('days-to-run');
+    const nextRunDateEl = document.getElementById('next-run-date');
     const runDateSelect = document.getElementById('run-date');
     const adminDateSelect = document.getElementById('admin-date-select');
     const waitlistDateSelect = document.getElementById('waitlist-date-select');
     const exportDateSelect = document.getElementById('export-date-select');
     const maxParticipantsInput = document.getElementById('max-participants');
-    const runDaySelect = document.getElementById('run-day');
-    const runTimeInput = document.getElementById('run-time');
-    const runFrequencySelect = document.getElementById('run-frequency');
     
     // Initialisierung
     async function init() {
         try {
             await loadConfig();
             await loadStations();
-            generateRunDates();
+            await generateRunDates();
             updateStatistics();
             setupEventListeners();
         } catch (error) {
@@ -45,15 +43,9 @@
         const result = await response.json();
         if (result.success && result.config) {
             config.maxParticipants = parseInt(result.config.max_participants) || 25;
-            config.runDay = parseInt(result.config.run_day) || 4;
-            config.runTime = result.config.run_time || '19:00';
-            config.runFrequency = result.config.run_frequency || 'weekly'; // Neue Config
-            
+
             if (maxRegistrationsEl) maxRegistrationsEl.textContent = config.maxParticipants;
             if (maxParticipantsInput) maxParticipantsInput.value = config.maxParticipants;
-            if (runDaySelect) runDaySelect.value = config.runDay;
-            if (runTimeInput) runTimeInput.value = config.runTime;
-            if (runFrequencySelect) runFrequencySelect.value = config.runFrequency;
         }
     }
     
@@ -118,78 +110,64 @@
         }
     }
     
-    // Datumsliste generieren
-    function generateRunDates() {
-        const now = new Date();
-        const runDates = [];
-        
-        // Hole Konfiguration für Frequenz
-        const runFrequency = config.runFrequency || 'weekly'; // Default: wöchentlich
-        
-        if (runFrequency === 'monthly_first') {
-            // Ersten Donnerstag der nächsten 6 Monate finden
-            for (let monthOffset = 0; monthOffset < 6; monthOffset++) {
-                const targetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-                const firstDayOfMonth = targetMonth.getDay();
-                
-                // Ersten Donnerstag berechnen (Donnerstag = 4)
-                let firstThursday = 1 + ((4 - firstDayOfMonth + 7) % 7);
-                if (firstThursday === 1 && firstDayOfMonth === 4) {
-                    // Falls der 1. ein Donnerstag ist
-                    firstThursday = 1;
-                }
-                
-                const runDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), firstThursday);
-                const [runHours, runMinutes] = config.runTime.split(':').map(Number);
-                runDate.setHours(runHours, runMinutes, 0, 0);
-                
-                // Nur zukünftige Termine oder heute (falls noch nicht vorbei)
-                if (runDate > now || (runDate.toDateString() === now.toDateString() && runDate > now)) {
-                    runDates.push(runDate);
-                }
-            }
-        } else {
-            // Original wöchentliche Logik
-            let nextRunDay = new Date(now);
-            const daysToAdd = (config.runDay + 7 - now.getDay()) % 7;
-            nextRunDay.setDate(now.getDate() + daysToAdd);
+    // Trainingstermine aus Datenbank laden
+    async function generateRunDates() {
+        try {
+            const response = await fetch(`${API_URL}?action=getTrainingDates`);
+            if (!response.ok) throw new Error('HTTP Fehler');
+            const result = await response.json();
 
-            const [runHours, runMinutes] = config.runTime.split(':').map(Number);
-            const runDateTimeToday = new Date(now);
-            runDateTimeToday.setHours(runHours, runMinutes, 0, 0);
-
-            if (daysToAdd === 0 && now >= runDateTimeToday) {
-                nextRunDay.setDate(nextRunDay.getDate() + 7);
-            }
-
-            for (let i = 0; i < 4; i++) {
-                const runDate = new Date(nextRunDay);
-                runDate.setDate(nextRunDay.getDate() + (i * 7));
-                runDates.push(runDate);
-            }
-        }
-        
-        // Dropdown-Menüs leeren
-        [runDateSelect, adminDateSelect, waitlistDateSelect, exportDateSelect].forEach(select => {
-            if (select) select.innerHTML = '';
-        });
-
-        // Optionen hinzufügen
-        runDates.forEach(runDate => {
-            const dateStr = window.skyrunApp.formatDate(runDate);
-            const dateValue = runDate.toISOString().split('T')[0];
-            const option = document.createElement('option');
-            option.value = dateValue;
-            option.textContent = dateStr;
+            // Dropdown-Menüs leeren
             [runDateSelect, adminDateSelect, waitlistDateSelect, exportDateSelect].forEach(select => {
-                if (select) select.appendChild(option.cloneNode(true));
+                if (select) select.innerHTML = '';
             });
-        });
 
-        // Tage bis zum nächsten Run
-        if (daysToRunEl && runDates.length > 0) {
-            const diffTime = runDates[0].getTime() - now.getTime();
-            daysToRunEl.textContent = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            if (result.success && result.dates && result.dates.length > 0) {
+                const now = new Date();
+
+                // Optionen hinzufügen
+                result.dates.forEach(dateInfo => {
+                    const [year, month, day] = dateInfo.date.split('-').map(Number);
+                    const [hours, minutes] = dateInfo.time.split(':').map(Number);
+                    const runDate = new Date(year, month - 1, day, hours, minutes);
+
+                    const dateStr = window.skyrunApp.formatDate(runDate) + ' - ' + dateInfo.time + ' Uhr';
+                    const option = document.createElement('option');
+                    option.value = dateInfo.date;
+                    option.textContent = dateStr;
+
+                    [runDateSelect, adminDateSelect, waitlistDateSelect, exportDateSelect].forEach(select => {
+                        if (select) select.appendChild(option.cloneNode(true));
+                    });
+                });
+
+                // Tage bis zum nächsten Run + Datum anzeigen
+                if (result.dates.length > 0) {
+                    const nextDate = result.dates[0];
+                    const [year, month, day] = nextDate.date.split('-').map(Number);
+                    const nextRunDate = new Date(year, month - 1, day);
+
+                    const diffTime = nextRunDate.getTime() - now.getTime();
+                    const daysUntil = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+                    if (daysToRunEl) daysToRunEl.textContent = daysUntil;
+                    if (nextRunDateEl) nextRunDateEl.textContent = `${day}.${month}.`;
+                }
+            } else {
+                // Keine Termine vorhanden
+                if (daysToRunEl) daysToRunEl.textContent = '-';
+                if (nextRunDateEl) nextRunDateEl.textContent = '';
+
+                // Leere Option anzeigen
+                const emptyOption = document.createElement('option');
+                emptyOption.value = '';
+                emptyOption.textContent = 'Keine Termine verfügbar';
+                [runDateSelect, adminDateSelect, waitlistDateSelect, exportDateSelect].forEach(select => {
+                    if (select) select.appendChild(emptyOption.cloneNode(true));
+                });
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der Trainingstermine:', error);
         }
     }
     

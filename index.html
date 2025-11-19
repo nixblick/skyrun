@@ -10,7 +10,7 @@
     <div class="container">
         <header>
             <h1>Skyrun Anmeldung</h1>
-            <p>über 1200 Stufen | 61 Etagen | 213 Höhenmeter | Jeden ersten Donnerstag im Monat 19:00 Uhr</p>
+            <p>über 1200 Stufen | 61 Etagen | 213 Höhenmeter | Termine siehe Auswahlfeld</p>
         </header>
 
         <main>
@@ -30,7 +30,7 @@
                     </div>
                     <div class="stat">
                         <span id="days-to-run">7</span>
-                        <p>Tage bis zum nächsten Run</p>
+                        <p>Tage bis <span id="next-run-date"></span></p>
                     </div>
                 </div>
             </section>
@@ -152,6 +152,7 @@
                     <div class="admin-tabs">
                         <button class="tab-btn active" data-tab="participants">Teilnehmer</button>
                         <button class="tab-btn" data-tab="waitlist">Warteliste</button>
+                        <button class="tab-btn" data-tab="dates">Termine</button>
                         <button class="tab-btn" data-tab="export">Exportieren</button>
                         <button class="tab-btn" data-tab="peakbook">Gipfelbuch</button>
                         <button class="tab-btn" data-tab="settings">Einstellungen</button>
@@ -192,7 +193,33 @@
                             <tbody id="waitlist-list"></tbody>
                         </table>
                     </div>
-                    
+
+                    <div id="dates-tab" class="tab-content">
+                        <h3>Trainingstermine verwalten</h3>
+                        <p>Hier kannst du die kommenden Trainingstermine festlegen.</p>
+
+                        <div class="form-group">
+                            <h4>Neuen Termin hinzufügen</h4>
+                            <label for="new-date">Datum:</label>
+                            <input type="date" id="new-date" required>
+                            <label for="new-time">Uhrzeit:</label>
+                            <input type="time" id="new-time" value="19:00" required>
+                            <button id="add-date-btn">Hinzufügen</button>
+                        </div>
+
+                        <h4>Aktuelle Termine</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Datum</th>
+                                    <th>Uhrzeit</th>
+                                    <th>Aktion</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dates-list"></tbody>
+                        </table>
+                    </div>
+
                     <div id="export-tab" class="tab-content">
                         <h3>Exportieren / Importieren</h3>
                         <select id="export-date-select"></select>
@@ -223,28 +250,10 @@
                         <h3>Einstellungen</h3>
                         <form id="settings-form">
                             <div class="form-group">
-                                <label for="max-participants">Max. Teilnehmer:</label>
+                                <label for="max-participants">Max. Teilnehmer pro Termin:</label>
                                 <input type="number" id="max-participants" min="1" required>
                             </div>
-                            
-                            <div class="form-group">
-                                <label for="run-day">Lauftag:</label>
-                                <select id="run-day" required>
-                                    <option value="0">Sonntag</option>
-                                    <option value="1">Montag</option>
-                                    <option value="2">Dienstag</option>
-                                    <option value="3">Mittwoch</option>
-                                    <option value="4">Donnerstag</option>
-                                    <option value="5">Freitag</option>
-                                    <option value="6">Samstag</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="run-time">Uhrzeit (HH:MM):</label>
-                                <input type="text" id="run-time" pattern="\d{2}:\d{2}" required>
-                            </div>
-                            
+
                             <button type="submit" id="save-settings-btn">Speichern</button>
                         </form>
                         
