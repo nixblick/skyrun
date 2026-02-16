@@ -1,29 +1,18 @@
 <?php
 /**
- * /api/mail.php
- * Version: 1.0.0
- * Email functionality
+ * mail-functions.php
+ * E-Mail-Funktionen für Skyrun-Anmeldungen
  */
 
-/**
- * Sendet eine E-Mail mit der PHP mail() Funktion
- * 
- * @param string $to Empfänger-E-Mail
- * @param string $subject Betreff
- * @param string $message Inhalt (HTML)
- * @param string $bcc BCC-Empfänger (optional)
- * @return bool Erfolg
- */
 function sendMail($to, $subject, $message, $bcc = '') {
     if (!defined('MAIL_ENABLED') || !MAIL_ENABLED) {
         error_log("E-Mail-Versand deaktiviert.");
         return false;
     }
 
-    // Header aufbauen
     $fromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'Anmeldung Training Skyrun';
     $fromEmail = defined('MAIL_FROM') ? MAIL_FROM : 'skyrun@mein-computerfreund.de';
-    
+
     $headers = [
         'MIME-Version: 1.0',
         'Content-type: text/html; charset=UTF-8',
@@ -31,44 +20,41 @@ function sendMail($to, $subject, $message, $bcc = '') {
         'Reply-To: ' . $fromEmail,
         'X-Mailer: PHP/' . phpversion()
     ];
-    
-    // BCC hinzufügen falls konfiguriert und nicht bereits als Parameter übergeben
+
     if (empty($bcc) && defined('MAIL_BCC') && !empty(MAIL_BCC)) {
         $bcc = MAIL_BCC;
     }
-    
+
     if (!empty($bcc)) {
         $headers[] = 'Bcc: ' . $bcc;
     }
 
-    // Mail senden
     $success = mail($to, $subject, $message, implode("\r\n", $headers));
-    
+
     if (!$success) {
         error_log("E-Mail konnte nicht gesendet werden an: $to");
     }
-    
+
     return $success;
 }
 
 /**
  * Sendet eine Registrierungsbestätigung
- * 
- * @param string $email E-Mail des Teilnehmers
- * @param string $name Name des Teilnehmers
- * @param string $date Datum des Runs (YYYY-MM-DD)
- * @param int $personCount Anzahl der Personen
- * @param bool $isWaitlisted Ob auf Warteliste
- * @param string $station Wachenname
+ *
+ * @param string $email       E-Mail des Teilnehmers
+ * @param string $name        Name des Teilnehmers
+ * @param string $date        Datum des Runs (YYYY-MM-DD)
+ * @param int    $personCount Anzahl der Personen
+ * @param bool   $isWaitlisted Ob auf Warteliste
+ * @param string $station     Wachenname
+ * @param string $building    Gebäude ('Messeturm' oder 'Trianon')
  * @return bool Erfolg
  */
 function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWaitlisted = false, $station = '', $building = 'Messeturm') {
-    // Datum formatieren
     $dateObj = new DateTime($date);
     $formattedDate = $dateObj->format('d.m.Y');
     $weekday = $dateObj->format('l');
 
-    // Deutsche Wochentage
     $weekdays = [
         'Monday'    => 'Montag',
         'Tuesday'   => 'Dienstag',
@@ -78,22 +64,19 @@ function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWai
         'Saturday'  => 'Samstag',
         'Sunday'    => 'Sonntag'
     ];
-
     $germanWeekday = $weekdays[$weekday] ?? $weekday;
 
-    // Status-Text
-    $statusText = $isWaitlisted ?
-        "auf die <strong>Warteliste</strong> gesetzt" :
-        "<strong>erfolgreich registriert</strong>";
+    $statusText = $isWaitlisted
+        ? "auf die <strong>Warteliste</strong> gesetzt"
+        : "<strong>erfolgreich registriert</strong>";
 
-    // Personen-Text
     $personText = ($personCount == 1) ? "Person" : "Personen";
 
     // Gebäudespezifische Infos
     if ($building === 'Trianon') {
         $buildingDisplayName = 'Trianon Frankfurt';
         $buildingTitle       = 'Trianon Skyrun';
-        $buildingStats       = 'viele viele Stufen | 47 Etagen | 186 H&ouml;henmeter | Trianon Frankfurt';
+        $buildingStats       = 'viele viele Stufen | 47 Etagen | 186 Höhenmeter | Trianon Frankfurt';
         $buildingAddress     = 'Mainzer Landstra&szlig;e 16&ndash;24, 60325 Frankfurt am Main';
     } else {
         $buildingDisplayName = 'MesseTurm Frankfurt';
@@ -102,17 +85,15 @@ function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWai
         $buildingAddress     = 'Friedrich-Ebert-Anlage 49, 60308 Frankfurt am Main';
     }
 
-    // Betreffzeile
-    $subject = $isWaitlisted ?
-        "Warteliste Skyrun Training – $buildingDisplayName – $germanWeekday, $formattedDate" :
-        "Anmeldung zum Skyrun Training – $buildingDisplayName – $germanWeekday, $formattedDate";
+    $subject = $isWaitlisted
+        ? "Warteliste Skyrun Training – $buildingDisplayName – $germanWeekday, $formattedDate"
+        : "Anmeldung zum Skyrun Training – $buildingDisplayName – $germanWeekday, $formattedDate";
 
-    $stationRow   = !empty($station) ? "<p>Wache: <strong>" . htmlspecialchars($station) . "</strong></p>" : "";
+    $stationRow = !empty($station) ? "<p>Wache: <strong>" . htmlspecialchars($station) . "</strong></p>" : "";
     $waitlistHint = $isWaitlisted
         ? "<p>Sollte ein Platz frei werden, r&uuml;ckst du automatisch nach. Wir informieren dich in diesem Fall nicht gesondert.</p>"
         : "";
 
-    // HTML-Nachricht erstellen
     $message = "
     <html>
     <head>

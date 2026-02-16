@@ -131,7 +131,8 @@
                     const [hours, minutes] = dateInfo.time.split(':').map(Number);
                     const runDate = new Date(year, month - 1, day, hours, minutes);
 
-                    const dateStr = window.skyrunApp.formatDate(runDate) + ' - ' + dateInfo.time + ' Uhr';
+                    const buildingLabel = dateInfo.building === 'Trianon' ? 'Trianon' : 'MesseTurm';
+                    const dateStr = window.skyrunApp.formatDate(runDate) + ' – ' + dateInfo.time + ' Uhr – ' + buildingLabel;
                     const option = document.createElement('option');
                     option.value = dateInfo.date;
                     option.textContent = dateStr;

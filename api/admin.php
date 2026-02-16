@@ -159,14 +159,14 @@ function handleAdminAction($action, $conn) {
                     // Teilnehmer über Hochstufung informieren
                     if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
                         // Zuerst Details des Teilnehmers abrufen
-                        $detailsStmt = $conn->prepare("SELECT name, email, station, personCount FROM registrations WHERE id = ?");
+                        $detailsStmt = $conn->prepare("SELECT name, email, station, personCount, building FROM registrations WHERE id = ?");
                         $detailsStmt->bind_param("i", $id);
                         $detailsStmt->execute();
                         $details = $detailsStmt->get_result()->fetch_assoc();
                         $detailsStmt->close();
-                        
+
                         if ($details) {
-                            sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station']);
+                            sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm');
                             error_log("Hochstufungs-E-Mail gesendet an: {$details['email']} für Datum: $date");
                         }
                     }
@@ -326,20 +326,33 @@ function handleAdminAction($action, $conn) {
                 exit;
             }
             // Zähle eindeutige Wachen pro Datum (nur Teilnehmer, keine Warteliste)
-            $stmt = $conn->prepare("
-                SELECT station, COUNT(DISTINCT date) as participation_count
-                FROM registrations
-                WHERE waitlisted = 0
-                GROUP BY station
-                ORDER BY participation_count DESC, station ASC
-            ");
+            $filterBuilding = trim($_POST['building'] ?? '');
+
+            if (!empty($filterBuilding) && in_array($filterBuilding, ['Messeturm', 'Trianon'])) {
+                $stmt = $conn->prepare("
+                    SELECT station, COUNT(DISTINCT date) as participation_count
+                    FROM registrations
+                    WHERE waitlisted = 0 AND building = ?
+                    GROUP BY station
+                    ORDER BY participation_count DESC, station ASC
+                ");
+                $stmt->bind_param("s", $filterBuilding);
+            } else {
+                $stmt = $conn->prepare("
+                    SELECT station, COUNT(DISTINCT date) as participation_count
+                    FROM registrations
+                    WHERE waitlisted = 0
+                    GROUP BY station
+                    ORDER BY participation_count DESC, station ASC
+                ");
+            }
             $stmt->execute();
             $result = $stmt->get_result();
             $peakBook = [];
             while ($row = $result->fetch_assoc()) {
                 $peakBook[] = [
                     'station' => $row['station'],
-                    'count' => (int)$row['participation_count']
+                    'count'   => (int)$row['participation_count']
                 ];
             }
             $stmt->close();
