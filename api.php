@@ -196,15 +196,23 @@ switch ($action) {
             exit;
         }
 
-        $stmt = $conn->prepare("INSERT INTO registrations (name, email, phone, station, date, waitlisted, registrationTime, personCount) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)");
+        // Gebäude aus training_dates auslesen
+        $buildingStmt = $conn->prepare("SELECT building FROM training_dates WHERE date = ?");
+        $buildingStmt->bind_param("s", $date);
+        $buildingStmt->execute();
+        $buildingRow = $buildingStmt->get_result()->fetch_assoc();
+        $building = $buildingRow['building'] ?? 'Messeturm';
+        $buildingStmt->close();
+
+        $stmt = $conn->prepare("INSERT INTO registrations (name, email, phone, station, date, waitlisted, registrationTime, personCount, building) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
         $waitlistedInt = $isWaitlisted ? 1 : 0;
-        $stmt->bind_param("sssssii", $name, $email, $phone, $station, $date, $waitlistedInt, $personCount);
-        
+        $stmt->bind_param("sssssiis", $name, $email, $phone, $station, $date, $waitlistedInt, $personCount, $building);
+
         if ($stmt->execute()) {
             // E-Mail-Bestätigung senden, wenn aktiviert
             if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
-                sendRegistrationConfirmation($email, $name, $date, $personCount, $isWaitlisted, $station);
-                
+                sendRegistrationConfirmation($email, $name, $date, $personCount, $isWaitlisted, $station, $building);
+
                 // Mail-Versuch loggen
                 error_log("Bestätigungs-E-Mail gesendet an: $email für Datum: $date");
             }
@@ -380,14 +388,14 @@ switch ($action) {
                 // Teilnehmer über Hochstufung informieren
                 if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
                     // Zuerst Details des Teilnehmers abrufen
-                    $detailsStmt = $conn->prepare("SELECT name, email, station, personCount FROM registrations WHERE id = ?");
+                    $detailsStmt = $conn->prepare("SELECT name, email, station, personCount, building FROM registrations WHERE id = ?");
                     $detailsStmt->bind_param("i", $id);
                     $detailsStmt->execute();
                     $details = $detailsStmt->get_result()->fetch_assoc();
                     $detailsStmt->close();
-                    
+
                     if ($details) {
-                        sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station']);
+                        sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm');
                         error_log("Hochstufungs-E-Mail gesendet an: {$details['email']} für Datum: $date");
                     }
                 }
@@ -556,20 +564,34 @@ switch ($action) {
             exit;
         }
         // Zähle eindeutige Wachen pro Datum (nur Teilnehmer, keine Warteliste)
-        $stmt = $conn->prepare("
-            SELECT station, COUNT(DISTINCT date) as participation_count
-            FROM registrations
-            WHERE waitlisted = 0
-            GROUP BY station
-            ORDER BY participation_count DESC, station ASC
-        ");
+        // Optionaler Building-Filter
+        $filterBuilding = trim($_POST['building'] ?? '');
+
+        if (!empty($filterBuilding) && in_array($filterBuilding, ['Messeturm', 'Trianon'])) {
+            $stmt = $conn->prepare("
+                SELECT station, COUNT(DISTINCT date) as participation_count
+                FROM registrations
+                WHERE waitlisted = 0 AND building = ?
+                GROUP BY station
+                ORDER BY participation_count DESC, station ASC
+            ");
+            $stmt->bind_param("s", $filterBuilding);
+        } else {
+            $stmt = $conn->prepare("
+                SELECT station, COUNT(DISTINCT date) as participation_count
+                FROM registrations
+                WHERE waitlisted = 0
+                GROUP BY station
+                ORDER BY participation_count DESC, station ASC
+            ");
+        }
         $stmt->execute();
         $result = $stmt->get_result();
         $peakBook = [];
         while ($row = $result->fetch_assoc()) {
             $peakBook[] = [
                 'station' => $row['station'],
-                'count' => (int)$row['participation_count']
+                'count'   => (int)$row['participation_count']
             ];
         }
         $stmt->close();
@@ -578,15 +600,16 @@ switch ($action) {
 
     case 'getTrainingDates':
         // Alle zukünftigen Termine abrufen (öffentlich)
-        $stmt = $conn->prepare("SELECT id, date, TIME_FORMAT(time, '%H:%i') as time FROM training_dates WHERE date >= CURDATE() ORDER BY date ASC");
+        $stmt = $conn->prepare("SELECT id, date, TIME_FORMAT(time, '%H:%i') as time, building FROM training_dates WHERE date >= CURDATE() ORDER BY date ASC");
         $stmt->execute();
         $result = $stmt->get_result();
         $dates = [];
         while ($row = $result->fetch_assoc()) {
             $dates[] = [
-                'id' => (int)$row['id'],
-                'date' => $row['date'],
-                'time' => $row['time']
+                'id'       => (int)$row['id'],
+                'date'     => $row['date'],
+                'time'     => $row['time'],
+                'building' => $row['building']
             ];
         }
         $stmt->close();
@@ -599,8 +622,9 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
-        $date = trim($_POST['date'] ?? '');
-        $time = trim($_POST['time'] ?? '19:00');
+        $date     = trim($_POST['date'] ?? '');
+        $time     = trim($_POST['time'] ?? '19:00');
+        $building = trim($_POST['building'] ?? 'Messeturm');
 
         if (empty($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             echo json_encode(['success' => false, 'message' => 'Ungültiges Datum.']);
@@ -610,9 +634,12 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Ungültige Uhrzeit.']);
             exit;
         }
+        if (!in_array($building, ['Messeturm', 'Trianon'])) {
+            $building = 'Messeturm';
+        }
 
-        $stmt = $conn->prepare("INSERT INTO training_dates (date, time) VALUES (?, ?)");
-        $stmt->bind_param("ss", $date, $time);
+        $stmt = $conn->prepare("INSERT INTO training_dates (date, time, building) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $date, $time, $building);
 
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Termin hinzugefügt.', 'id' => $stmt->insert_id]);
@@ -632,9 +659,10 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
-        $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
-        $date = trim($_POST['date'] ?? '');
-        $time = trim($_POST['time'] ?? '19:00');
+        $id       = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
+        $date     = trim($_POST['date'] ?? '');
+        $time     = trim($_POST['time'] ?? '19:00');
+        $building = trim($_POST['building'] ?? 'Messeturm');
 
         if ($id <= 0) {
             echo json_encode(['success' => false, 'message' => 'Ungültige ID.']);
@@ -648,9 +676,12 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Ungültige Uhrzeit.']);
             exit;
         }
+        if (!in_array($building, ['Messeturm', 'Trianon'])) {
+            $building = 'Messeturm';
+        }
 
-        $stmt = $conn->prepare("UPDATE training_dates SET date = ?, time = ? WHERE id = ?");
-        $stmt->bind_param("ssi", $date, $time, $id);
+        $stmt = $conn->prepare("UPDATE training_dates SET date = ?, time = ?, building = ? WHERE id = ?");
+        $stmt->bind_param("sssi", $date, $time, $building, $id);
         $success = $stmt->execute();
         $stmt->close();
 

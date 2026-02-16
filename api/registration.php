@@ -57,14 +57,22 @@ function handleRegistrationAction($action, $conn) {
                 exit;
             }
 
-            $stmt = $conn->prepare("INSERT INTO registrations (name, email, phone, station, date, waitlisted, registrationTime, personCount) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)");
+            // Gebäude aus training_dates auslesen
+            $buildingStmt = $conn->prepare("SELECT building FROM training_dates WHERE date = ?");
+            $buildingStmt->bind_param("s", $date);
+            $buildingStmt->execute();
+            $buildingRow = $buildingStmt->get_result()->fetch_assoc();
+            $building = $buildingRow['building'] ?? 'Messeturm';
+            $buildingStmt->close();
+
+            $stmt = $conn->prepare("INSERT INTO registrations (name, email, phone, station, date, waitlisted, registrationTime, personCount, building) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
             $waitlistedInt = $isWaitlisted ? 1 : 0;
-            $stmt->bind_param("sssssii", $name, $email, $phone, $station, $date, $waitlistedInt, $personCount);
-            
+            $stmt->bind_param("sssssiis", $name, $email, $phone, $station, $date, $waitlistedInt, $personCount, $building);
+
             if ($stmt->execute()) {
                 // E-Mail-Bestätigung senden, wenn aktiviert
                 if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
-                    sendRegistrationConfirmation($email, $name, $date, $personCount, $isWaitlisted, $station);
+                    sendRegistrationConfirmation($email, $name, $date, $personCount, $isWaitlisted, $station, $building);
                     
                     // Mail-Versuch loggen
                     error_log("Bestätigungs-E-Mail gesendet an: $email für Datum: $date");

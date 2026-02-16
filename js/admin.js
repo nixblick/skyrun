@@ -203,8 +203,12 @@
         const peakBookListBody = document.getElementById('peakbook-list');
         peakBookListBody.innerHTML = '<tr><td colspan="2">Lade Gipfelbuch...</td></tr>';
 
+        const buildingFilter = document.getElementById('peakbook-building-filter');
         const formData = new FormData();
         formData.append('action', 'getPeakBook');
+        if (buildingFilter && buildingFilter.value) {
+            formData.append('building', buildingFilter.value);
+        }
 
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
@@ -434,7 +438,7 @@
     async function loadTrainingDates() {
         if (!adminAuthenticated) return;
         const datesListBody = document.getElementById('dates-list');
-        datesListBody.innerHTML = '<tr><td colspan="3">Lade Termine...</td></tr>';
+        datesListBody.innerHTML = '<tr><td colspan="4">Lade Termine...</td></tr>';
 
         try {
             const response = await fetch(`${API_URL}?action=getTrainingDates`);
@@ -447,19 +451,21 @@
                     const row = datesListBody.insertRow();
                     const dateObj = new Date(dateInfo.date + 'T00:00:00');
                     const formattedDate = dateObj.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const buildingLabel = dateInfo.building === 'Trianon' ? 'Trianon Frankfurt' : 'MesseTurm Frankfurt';
 
                     row.innerHTML = `
                         <td>${formattedDate}</td>
                         <td>${dateInfo.time} Uhr</td>
+                        <td>${escapeHTML(buildingLabel)}</td>
                         <td><button class="action-btn remove-btn" data-id="${dateInfo.id}">Löschen</button></td>
                     `;
                     row.querySelector('.remove-btn').addEventListener('click', () => deleteTrainingDate(dateInfo.id));
                 });
             } else {
-                datesListBody.innerHTML = '<tr><td colspan="3">Keine Termine vorhanden</td></tr>';
+                datesListBody.innerHTML = '<tr><td colspan="4">Keine Termine vorhanden</td></tr>';
             }
         } catch (error) {
-            datesListBody.innerHTML = '<tr><td colspan="3">Fehler beim Laden</td></tr>';
+            datesListBody.innerHTML = '<tr><td colspan="4">Fehler beim Laden</td></tr>';
             console.error('Fehler:', error);
         }
     }
@@ -467,11 +473,13 @@
     // Neuen Trainingstermin hinzufügen
     async function addTrainingDate() {
         if (!adminAuthenticated) return;
-        const dateInput = document.getElementById('new-date');
-        const timeInput = document.getElementById('new-time');
+        const dateInput     = document.getElementById('new-date');
+        const timeInput     = document.getElementById('new-time');
+        const buildingInput = document.getElementById('new-building');
 
-        const date = dateInput.value;
-        const time = timeInput.value;
+        const date     = dateInput.value;
+        const time     = timeInput.value;
+        const building = buildingInput ? buildingInput.value : 'Messeturm';
 
         if (!date || !time) {
             alert('Bitte Datum und Uhrzeit angeben.');
@@ -482,6 +490,7 @@
         formData.append('action', 'addTrainingDate');
         formData.append('date', date);
         formData.append('time', time);
+        formData.append('building', building);
 
         const addButton = document.getElementById('add-date-btn');
         addButton.disabled = true;
@@ -602,4 +611,8 @@
     // Termin-Verwaltung Event-Listener
     const addDateBtn = document.getElementById('add-date-btn');
     if (addDateBtn) addDateBtn.addEventListener('click', addTrainingDate);
+
+    // Gipfelbuch Building-Filter
+    const peakbookBuildingFilter = document.getElementById('peakbook-building-filter');
+    if (peakbookBuildingFilter) peakbookBuildingFilter.addEventListener('change', updatePeakBook);
 })();
