@@ -166,7 +166,14 @@ function handleAdminAction($action, $conn) {
                         $detailsStmt->close();
 
                         if ($details) {
-                            sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm');
+                            $timeStmt = $conn->prepare("SELECT TIME_FORMAT(time, '%H:%i') as time FROM training_dates WHERE date = ?");
+                            $timeStmt->bind_param("s", $date);
+                            $timeStmt->execute();
+                            $timeRow = $timeStmt->get_result()->fetch_assoc();
+                            $timeStmt->close();
+                            $promoteTime = $timeRow['time'] ?? '19:00';
+
+                            sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm', $promoteTime);
                             error_log("Hochstufungs-E-Mail gesendet an: {$details['email']} für Datum: $date");
                         }
                     }
