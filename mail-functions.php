@@ -50,7 +50,7 @@ function sendMail($to, $subject, $message, $bcc = '') {
  * @param string $building    Gebäude ('Messeturm' oder 'Trianon')
  * @return bool Erfolg
  */
-function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWaitlisted = false, $station = '', $building = 'Messeturm') {
+function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWaitlisted = false, $station = '', $building = 'Messeturm', $time = '19:00') {
     $dateObj = new DateTime($date);
     $formattedDate = $dateObj->format('d.m.Y');
     $weekday = $dateObj->format('l');
@@ -113,10 +113,12 @@ function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWai
             <p>vielen Dank f&uuml;r deine Anmeldung zum Skyrun Training im $buildingDisplayName.</p>
 
             <div class='info'>
-                <p>Du wurdest f&uuml;r den Lauf am <strong>$germanWeekday, $formattedDate</strong> mit <strong>$personCount $personText</strong> $statusText.</p>
+                <p>Du wurdest f&uuml;r den Lauf am <strong>$germanWeekday, $formattedDate um $time Uhr</strong> mit <strong>$personCount $personText</strong> $statusText.</p>
                 $stationRow
                 <p>Ort: <strong>$buildingAddress</strong></p>
             </div>
+
+            <p><strong>Bitte sei p&uuml;nktlich um $time Uhr vor Ort.</strong> Wer mit Atemschutz trainieren m&ouml;chte, muss um $time Uhr vollst&auml;ndig ausger&uuml;stet und einsatzbereit sein!</p>
 
             $waitlistHint
 
