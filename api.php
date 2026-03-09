@@ -746,9 +746,8 @@ switch ($action) {
     case 'createBackup':
         // Token-Auth fuer automatisierte Backups (GitHub Actions)
         $token = $_GET['token'] ?? $_POST['token'] ?? '';
-        $validToken = 'qjHHgsqRcDLR9HMJFhmhTugscSzuciyHZcKKhuzFzaoDzCAtLvWjFhoaacuisPba';
 
-        if ($token !== $validToken && !isAdminAuthenticated()) {
+        if ((!defined('BACKUP_TOKEN') || $token !== BACKUP_TOKEN) && !isAdminAuthenticated()) {
             http_response_code(403);
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
