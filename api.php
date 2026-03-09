@@ -285,10 +285,32 @@ switch ($action) {
         break;
 
     case 'adminLogin':
+        // Rate Limiting: max 5 Fehlversuche, dann 60s Sperre
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $rateLimitKey = 'login_attempts_' . md5($ip);
+
+        if (!isset($_SESSION[$rateLimitKey])) {
+            $_SESSION[$rateLimitKey] = ['count' => 0, 'last_attempt' => 0];
+        }
+
+        $attempts = &$_SESSION[$rateLimitKey];
+
+        // Sperre abgelaufen? Zähler zurücksetzen
+        if ($attempts['count'] >= 5 && (time() - $attempts['last_attempt']) > 60) {
+            $attempts['count'] = 0;
+        }
+
+        if ($attempts['count'] >= 5) {
+            $waitSeconds = 60 - (time() - $attempts['last_attempt']);
+            echo json_encode(['success' => false, 'message' => "Zu viele Fehlversuche. Bitte $waitSeconds Sekunden warten."]);
+            break;
+        }
+
         $username = trim($_POST['username'] ?? '');
         $password = trim($_POST['password'] ?? '');
 
         if (verifyAdminLogin($username, $password)) {
+            $attempts['count'] = 0;
             session_regenerate_id(true);
             $_SESSION['admin_authenticated'] = true;
             $_SESSION['admin_username'] = $username;
@@ -296,7 +318,13 @@ switch ($action) {
             $csrfToken = generateCsrfToken();
             echo json_encode(['success' => true, 'csrfToken' => $csrfToken]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Ungültige Zugangsdaten.']);
+            $attempts['count']++;
+            $attempts['last_attempt'] = time();
+            $remaining = 5 - $attempts['count'];
+            $msg = $remaining > 0
+                ? "Ungültige Zugangsdaten. Noch $remaining Versuch(e)."
+                : "Zu viele Fehlversuche. Bitte 60 Sekunden warten.";
+            echo json_encode(['success' => false, 'message' => $msg]);
         }
         break;
 
