@@ -2,8 +2,7 @@
 
 ## KRITISCH - Sicherheit
 
-- [ ] **Passwörter rotieren** — Alte Passwörter aus Git-Historie sind kompromittiert. Bei Goneo ändern: DB-Passwort, SMTP-Passwort (`skyrun@mein-computerfreund.de`), dann in `config.php` auf dem Server aktualisieren. Backup-Token in GitHub Secret (`BACKUP_TOKEN`) und `config.php` erneuern.
-- [ ] **CSRF-Schutz für Admin-Aktionen** — Keine CSRF-Tokens vorhanden. Jede Website kann Admin-Aktionen im Browser eines eingeloggten Admins auslösen
+- [ ] **Passwörter rotieren** — Alte Passwörter aus Git-Historie sind kompromittiert. Bei Goneo ändern: DB-Passwort, SMTP-Passwort (`skyrun@mein-computerfreund.de`), dann `./rotate_credentials.sh` ausführen.
 
 ## VERBESSERUNGEN
 

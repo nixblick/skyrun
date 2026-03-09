@@ -57,6 +57,25 @@ $conn->set_charset("utf8mb4");
 
 // === Hilfsfunktionen ===
 
+function generateCsrfToken() {
+    $token = bin2hex(random_bytes(32));
+    $_SESSION['csrf_token'] = $token;
+    return $token;
+}
+
+function validateCsrfToken() {
+    $token = $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '';
+    return !empty($token) && isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+function requireCsrf() {
+    if (!validateCsrfToken()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Ungültiger CSRF-Token.']);
+        exit;
+    }
+}
+
 function getMaxParticipants() {
     global $conn;
     $defaultMax = 25;
@@ -251,8 +270,9 @@ switch ($action) {
 
         if (verifyAdminLogin($username, $password)) {
             $_SESSION['admin_authenticated'] = true;
-            $_SESSION['admin_username'] = $username; // Optional für spätere Nutzung
-            echo json_encode(['success' => true]);
+            $_SESSION['admin_username'] = $username;
+            $csrfToken = generateCsrfToken();
+            echo json_encode(['success' => true, 'csrfToken' => $csrfToken]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Ungültige Zugangsdaten.']);
         }
@@ -304,6 +324,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
+        requireCsrf();
         $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
         $date = trim($_POST['date'] ?? '');
         if ($id <= 0 || empty($date)) {
@@ -383,6 +404,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
+        requireCsrf();
         $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
         $date = trim($_POST['date'] ?? '');
         if ($id <= 0 || empty($date)) {
@@ -467,6 +489,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
+        requireCsrf();
         $jsonData = $_POST['data'] ?? '';
         if (empty($jsonData)) {
             echo json_encode(['success' => false, 'message' => 'Keine Daten.']);
@@ -523,6 +546,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
+        requireCsrf();
         $maxParticipants = filter_var($_POST['maxParticipants'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         $runDay = filter_var($_POST['runDay'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 6]]);
         $runTime = trim($_POST['runTime'] ?? '');
@@ -569,6 +593,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
+        requireCsrf();
         $username = $_SESSION['admin_username'];
         $currentPassword = trim($_POST['currentPassword'] ?? '');
         $newPassword = trim($_POST['newPassword'] ?? '');
@@ -656,6 +681,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
+        requireCsrf();
         $date     = trim($_POST['date'] ?? '');
         $time     = trim($_POST['time'] ?? '19:00');
         $building = trim($_POST['building'] ?? 'Messeturm');
@@ -693,6 +719,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
+        requireCsrf();
         $id       = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
         $date     = trim($_POST['date'] ?? '');
         $time     = trim($_POST['time'] ?? '19:00');
@@ -728,6 +755,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
+        requireCsrf();
         $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
 
         if ($id <= 0) {
