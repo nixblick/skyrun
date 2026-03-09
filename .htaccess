@@ -11,6 +11,7 @@ Options -Indexes
     Require all denied
 </Files>
 
+
 # Optional: Verhindert direkten Zugriff auf die API-Datei, falls alle Zugriffe über index.html laufen sollen
 # <Files "api.php">
 #     Require all denied

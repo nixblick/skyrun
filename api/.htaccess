@@ -1,0 +1,3 @@
+# Modulare API deaktiviert — Frontend nutzt api.php direkt
+# api/index.php hat keinen CAPTCHA/Honeypot-Schutz und darf nicht erreichbar sein
+Require all denied

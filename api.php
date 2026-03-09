@@ -35,7 +35,7 @@ function validateCaptcha($answer) {
 }
 
 // CORS-Header
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: https://www.mein-computerfreund.de');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
@@ -137,7 +137,6 @@ switch ($action) {
 
     case 'getStations':
         $result = $conn->query("SELECT id, code, name, type FROM stations ORDER BY type, sort_order");
-        $stations = [];
         $groupedStations = ['BF' => [], 'FF' => [], 'Sonstige' => []];
         
         while ($row = $result->fetch_assoc()) {
@@ -175,6 +174,12 @@ switch ($action) {
 
         if (empty($name) || empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || empty($date) || $personCount === false) {
             echo json_encode(['success' => false, 'message' => 'Pflichtfelder fehlen oder ungültig.']);
+            exit;
+        }
+
+        // Datumsformat validieren (YYYY-MM-DD)
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            echo json_encode(['success' => false, 'message' => 'Ungültiges Datumsformat.']);
             exit;
         }
 
@@ -340,6 +345,27 @@ switch ($action) {
                         $updateStmt->execute();
                         $availableSpots -= $waitlistEntry['personCount'];
                         $updateStmt->close();
+
+                        // Hochgestuften Teilnehmer per E-Mail benachrichtigen
+                        if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
+                            $detailsStmt = $conn->prepare("SELECT name, email, station, personCount, building FROM registrations WHERE id = ?");
+                            $detailsStmt->bind_param("i", $waitlistEntry['id']);
+                            $detailsStmt->execute();
+                            $details = $detailsStmt->get_result()->fetch_assoc();
+                            $detailsStmt->close();
+
+                            if ($details) {
+                                $timeStmt = $conn->prepare("SELECT TIME_FORMAT(time, '%H:%i') as time FROM training_dates WHERE date = ?");
+                                $timeStmt->bind_param("s", $date);
+                                $timeStmt->execute();
+                                $timeRow = $timeStmt->get_result()->fetch_assoc();
+                                $timeStmt->close();
+                                $promoteTime = $timeRow['time'] ?? '19:00';
+
+                                sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm', $promoteTime);
+                                error_log("Auto-Hochstufungs-E-Mail gesendet an: {$details['email']} für Datum: $date");
+                            }
+                        }
                     } else {
                         break;
                     }

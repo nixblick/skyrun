@@ -66,6 +66,8 @@ function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWai
     ];
     $germanWeekday = $weekdays[$weekday] ?? $weekday;
 
+    $time = htmlspecialchars($time, ENT_QUOTES, 'UTF-8');
+
     $statusText = $isWaitlisted
         ? "auf die <strong>Warteliste</strong> gesetzt"
         : "<strong>erfolgreich registriert</strong>";
@@ -76,7 +78,7 @@ function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWai
     if ($building === 'Trianon') {
         $buildingDisplayName = 'Trianon Frankfurt';
         $buildingTitle       = 'Trianon Skyrun';
-        $buildingStats       = 'viele viele Stufen | 47 Etagen | 186 Höhenmeter | Trianon Frankfurt';
+        $buildingStats       = 'viele viele Stufen | 47 Etagen | 186 H&ouml;henmeter | Trianon Frankfurt';
         $buildingAddress     = 'Mainzer Landstra&szlig;e 16&ndash;24, 60325 Frankfurt am Main';
     } else {
         $buildingDisplayName = 'MesseTurm Frankfurt';

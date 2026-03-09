@@ -12,7 +12,6 @@ function handleRegistrationAction($action, $conn) {
     switch ($action) {
         case 'getStations':
             $result = $conn->query("SELECT id, code, name, type FROM stations ORDER BY type, sort_order");
-            $stations = [];
             $groupedStations = ['BF' => [], 'FF' => [], 'Sonstige' => []];
             
             while ($row = $result->fetch_assoc()) {

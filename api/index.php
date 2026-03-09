@@ -7,10 +7,11 @@
 
 // Session starten
 session_start();
-// Debugging
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// Fehler nur ins Log, nicht an den Browser
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
+ini_set('log_errors', 1);
 // Einbinden der benötigten Module
 require_once 'config.php';
 require_once 'db.php';
@@ -21,7 +22,7 @@ require_once 'admin.php';
 require_once 'mail.php';
 
 // CORS-Header
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: https://www.mein-computerfreund.de');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');

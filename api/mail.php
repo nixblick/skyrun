@@ -81,6 +81,8 @@ function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWai
 
     $germanWeekday = $weekdays[$weekday] ?? $weekday;
 
+    $time = htmlspecialchars($time, ENT_QUOTES, 'UTF-8');
+
     // Status-Text
     $statusText = $isWaitlisted ?
         "auf die <strong>Warteliste</strong> gesetzt" :
