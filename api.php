@@ -770,7 +770,7 @@ switch ($action) {
             }
 
             $size = filesize($backupFile);
-            echo json_encode(['success' => true, 'message' => "Backup erstellt: " . basename($backupFile) . " ($size Bytes)"]);
+            echo json_encode(['success' => true, 'message' => "Backup erstellt: " . basename($backupFile) . " ($size Bytes)", 'path' => $backupDir]);
         } catch (Exception $e) {
             error_log("Backup-Fehler: " . $e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Backup fehlgeschlagen.']);
