@@ -1,55 +1,32 @@
 name: Database Backup
 on:
   schedule:
-    - cron: '0 2 * * *'
-  workflow_dispatch:
+    - cron: '0 2 * * 1'  # Jeden Montag um 02:00 UTC
+  workflow_dispatch:       # Manuell ausloesbar
+
 jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Create backup trigger file
+      - name: Trigger backup via HTTP
         run: |
-          mkdir -p temp_backup
-          echo "<?php" > temp_backup/run_backup.php
-          echo "// Backup ausführen" >> temp_backup/run_backup.php
-          echo "// Automatisch erstellt: $(date)" >> temp_backup/run_backup.php
-          echo "require_once 'backup_db.php';" >> temp_backup/run_backup.php
-          echo "?>" >> temp_backup/run_backup.php
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.FTP_SERVER }}/skyrun/create_backup.php?token=${{ secrets.BACKUP_TOKEN }}")
+          echo "HTTP Status: $RESPONSE"
+          if [ "$RESPONSE" != "200" ]; then
+            echo "FEHLER: Backup fehlgeschlagen (HTTP $RESPONSE)"
+            exit 1
+          fi
+          echo "Backup erfolgreich ausgeloest"
 
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
-      
-      - name: SFTP Upload trigger file
+      - name: Verify backup exists
         env:
           SSHPASS: ${{ secrets.FTP_PASSWORD }}
         run: |
-          sshpass -e sftp -o StrictHostKeyChecking=no -P 2222 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} << EOF
-          cd /htdocs/html/skyrun/
-          lcd temp_backup
-          put run_backup.php
-          bye
-          EOF
-      
-      - name: Sleep for backup execution
-        run: sleep 30
-      
-      - name: Check FTPS backups
-        env:
-          SSHPASS: ${{ secrets.FTP_PASSWORD }}
-        run: |
-          echo "Checking backups..."
+          sudo apt-get install -y -qq sshpass
+          echo "Pruefe Backup-Dateien..."
           sshpass -e sftp -o StrictHostKeyChecking=no -P 2222 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} << EOF
           cd /htdocs/html/skyrun/backups
-          ls -l
-          bye
-          EOF
-      
-      - name: Cleanup trigger file
-        env:
-          SSHPASS: ${{ secrets.FTP_PASSWORD }}
-        run: |
-          sshpass -e sftp -o StrictHostKeyChecking=no -P 2222 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} << EOF
-          cd /htdocs/html/skyrun/
-          rm run_backup.php
+          ls -lt | head -5
           bye
           EOF
