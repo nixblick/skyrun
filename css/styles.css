@@ -174,26 +174,80 @@ h2 {
     display: block;
 }
 
-.stats {
-    display: flex;
-    justify-content: space-around;
-    text-align: center;
-    margin-top: 30px;
+/* Nächste Termine */
+.upcoming-title {
+    color: var(--secondary-color);
+    margin-top: 20px;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
 }
 
-.stat {
-    padding: 15px;
+.upcoming-runs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.upcoming-run {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     background-color: var(--light-color);
     border-radius: 5px;
-    width: 30%;
+    padding: 12px 16px;
+    border-left: 4px solid var(--primary-color);
+    transition: background-color 0.3s;
 }
 
-.stat span {
-    font-size: 2rem;
+.upcoming-run .run-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.upcoming-run .run-date {
     font-weight: bold;
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.upcoming-run .run-building {
     color: var(--primary-color);
-    display: block;
-    margin-bottom: 5px;
+    font-size: 0.85rem;
+}
+
+.upcoming-run .run-stats {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    text-align: center;
+}
+
+.upcoming-run .run-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+}
+
+.upcoming-run .run-stat-value {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.upcoming-run .run-stat-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.upcoming-run .run-days {
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    white-space: nowrap;
 }
 
 .form-group {
@@ -437,6 +491,16 @@ th {
 
     .building-cards {
         flex-direction: column;
+    }
+
+    .upcoming-run {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .upcoming-run .run-stats {
+        width: 100%;
+        justify-content: space-around;
     }
 
     .admin-tabs {

@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.3.0] - 2026-03-09
+
+### Geändert
+- **Terminübersicht statt Einzelzähler** — Statt einer einzigen Anmeldezahl werden jetzt die nächsten 3 Termine als kompakte Karten angezeigt, jeweils mit Gebäude, Anmeldezahl/Max, Warteliste und Tage-Countdown ("Heute", "Morgen", "in X Tagen"). Sinnvoll bei mehreren Trainings pro Woche.
+
 ## [3.2.0] - 2026-03-09
 
 ### Hinzugefügt

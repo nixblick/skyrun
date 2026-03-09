@@ -11,11 +11,7 @@
     let config = { maxParticipants: 25, runDay: 4, runTime: '19:00', runFrequency: 'weekly' };
     
     // DOM-Elemente
-    const currentRegistrationsEl = document.getElementById('current-registrations');
-    const maxRegistrationsEl = document.getElementById('max-registrations');
-    const currentWaitlistEl = document.getElementById('current-waitlist');
-    const daysToRunEl = document.getElementById('days-to-run');
-    const nextRunDateEl = document.getElementById('next-run-date');
+    const upcomingRunsEl = document.getElementById('upcoming-runs');
     const runDateSelect = document.getElementById('run-date');
     const adminDateSelect = document.getElementById('admin-date-select');
     const waitlistDateSelect = document.getElementById('waitlist-date-select');
@@ -44,7 +40,6 @@
         if (result.success && result.config) {
             config.maxParticipants = parseInt(result.config.max_participants) || 25;
 
-            if (maxRegistrationsEl) maxRegistrationsEl.textContent = config.maxParticipants;
             if (maxParticipantsInput) maxParticipantsInput.value = config.maxParticipants;
         }
     }
@@ -132,7 +127,7 @@
                     const runDate = new Date(year, month - 1, day, hours, minutes);
 
                     const buildingLabel = dateInfo.building === 'Trianon' ? 'Trianon' : 'MesseTurm';
-                    const dateStr = window.skyrunApp.formatDate(runDate) + ' – ' + dateInfo.time + ' Uhr – ' + buildingLabel;
+                    const dateStr = window.skyrunApp.formatDate(runDate) + ' \u2013 ' + dateInfo.time + ' Uhr \u2013 ' + buildingLabel;
                     const option = document.createElement('option');
                     option.value = dateInfo.date;
                     option.textContent = dateStr;
@@ -142,27 +137,15 @@
                     });
                 });
 
-                // Tage bis zum nächsten Run + Datum anzeigen
-                if (result.dates.length > 0) {
-                    const nextDate = result.dates[0];
-                    const [year, month, day] = nextDate.date.split('-').map(Number);
-                    const nextRunDate = new Date(year, month - 1, day);
-
-                    const diffTime = nextRunDate.getTime() - now.getTime();
-                    const daysUntil = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-
-                    if (daysToRunEl) daysToRunEl.textContent = daysUntil;
-                    if (nextRunDateEl) nextRunDateEl.textContent = `${day}.${month}.`;
-                }
+                // Nächste Termine als Übersicht rendern (max. 3)
+                renderUpcomingRuns(result.dates.slice(0, 3), now);
             } else {
-                // Keine Termine vorhanden
-                if (daysToRunEl) daysToRunEl.textContent = '-';
-                if (nextRunDateEl) nextRunDateEl.textContent = '';
+                // Keine Termine
+                if (upcomingRunsEl) upcomingRunsEl.innerHTML = '<p style="color:var(--text-secondary)">Keine Termine verf\u00fcgbar</p>';
 
-                // Leere Option anzeigen
                 const emptyOption = document.createElement('option');
                 emptyOption.value = '';
-                emptyOption.textContent = 'Keine Termine verfügbar';
+                emptyOption.textContent = 'Keine Termine verf\u00fcgbar';
                 [runDateSelect, adminDateSelect, waitlistDateSelect, exportDateSelect].forEach(select => {
                     if (select) select.appendChild(emptyOption.cloneNode(true));
                 });
@@ -171,20 +154,70 @@
             console.error('Fehler beim Laden der Trainingstermine:', error);
         }
     }
+
+    // Nächste Termine rendern mit Stats
+    async function renderUpcomingRuns(dates, now) {
+        if (!upcomingRunsEl) return;
+        upcomingRunsEl.innerHTML = '';
+
+        var weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+        for (var i = 0; i < dates.length; i++) {
+            var dateInfo = dates[i];
+            var parts = dateInfo.date.split('-').map(Number);
+            var runDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            var diffTime = runDate.getTime() - now.getTime();
+            var daysUntil = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            var buildingLabel = dateInfo.building === 'Trianon' ? 'Trianon' : 'MesseTurm';
+            var dayLabel = daysUntil === 0 ? 'Heute' : daysUntil === 1 ? 'Morgen' : 'in ' + daysUntil + ' Tagen';
+            var wd = weekdays[runDate.getDay()];
+            var dateStr = wd + ', ' + parts[2] + '.' + parts[1] + '. \u2013 ' + dateInfo.time + ' Uhr';
+
+            // Stats laden
+            var stats = { participants: '?', waitlist: '?', maxParticipants: config.maxParticipants };
+            try {
+                var resp = await fetch(API_URL + '?action=getStats&date=' + dateInfo.date);
+                if (resp.ok) {
+                    var r = await resp.json();
+                    if (r.success) stats = r;
+                }
+            } catch (e) { /* ignore */ }
+
+            var card = document.createElement('div');
+            card.className = 'upcoming-run';
+            card.innerHTML =
+                '<div class="run-info">' +
+                    '<span class="run-date">' + dateStr + '</span>' +
+                    '<span class="run-building">' + buildingLabel + '</span>' +
+                '</div>' +
+                '<div class="run-stats">' +
+                    '<div class="run-stat">' +
+                        '<span class="run-stat-value">' + stats.participants + '/' + stats.maxParticipants + '</span>' +
+                        '<span class="run-stat-label">Angemeldet</span>' +
+                    '</div>' +
+                    '<div class="run-stat">' +
+                        '<span class="run-stat-value">' + stats.waitlist + '</span>' +
+                        '<span class="run-stat-label">Warteliste</span>' +
+                    '</div>' +
+                    '<span class="run-days">' + dayLabel + '</span>' +
+                '</div>';
+
+            upcomingRunsEl.appendChild(card);
+        }
+    }
     
-    // Statistiken aktualisieren
+    // Statistiken aktualisieren (für Formular-Kontext)
     async function updateStatistics() {
         if (!runDateSelect) return;
-        const selectedDate = runDateSelect.value;
-        const response = await fetch(`${API_URL}?action=getStats&date=${selectedDate}`);
-        if (!response.ok) throw new Error('HTTP Fehler');
-        const result = await response.json();
-        if (result.success) {
-            currentRegistrationsEl.textContent = result.participants;
-            maxRegistrationsEl.textContent = result.maxParticipants;
-            currentWaitlistEl.textContent = result.waitlist;
-            config.maxParticipants = result.maxParticipants;
-        }
+        var selectedDate = runDateSelect.value;
+        try {
+            var response = await fetch(API_URL + '?action=getStats&date=' + selectedDate);
+            if (!response.ok) return;
+            var result = await response.json();
+            if (result.success) {
+                config.maxParticipants = result.maxParticipants;
+            }
+        } catch (e) { /* ignore */ }
     }
     
     // Event-Listener einrichten
