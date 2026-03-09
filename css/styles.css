@@ -203,12 +203,12 @@ footer a:hover {
 
 .footer-credit {
     margin-top: 8px;
-    font-size: 11px;
-    color: #aaa;
+    font-size: 9px;
+    color: #bbb;
 }
 
 .footer-credit a {
-    color: #aaa;
+    color: #bbb;
 }
 
 .footer-credit a:hover {
