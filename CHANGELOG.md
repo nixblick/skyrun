@@ -9,6 +9,15 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 - TODO.md mit bekannten Issues und Verbesserungsvorschlägen
 - CHANGELOG.md zur Dokumentation aller Änderungen
 - Lokales Backup-Script (`backup_local.sh`) für manuelle DB-Sicherungen
+- `createBackup` API-Endpoint in `api.php` — Token- oder Admin-Session-geschützt
+- Automatische Bereinigung alter Backups (behält die letzten 30)
+- `training_dates`-Tabelle wird jetzt mitgesichert
+- `DROP TABLE IF EXISTS` vor jedem CREATE im Backup für saubere Wiederherstellung
+
+### Geändert
+- Backup-Workflow nutzt jetzt `api.php?action=createBackup` statt fragilen PHP-Upload-Hack
+- Backup-Workflow läuft wöchentlich (Montag 02:00 UTC) statt täglich
+- .gitignore aufgeräumt und erweitert
 
 ## [1.5.0] - 2025-12-11
 
