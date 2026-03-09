@@ -29,7 +29,7 @@ jobs:
           sudo apt-get install -y -qq sshpass
           echo "Pruefe Backup-Dateien..."
           sshpass -e sftp -o StrictHostKeyChecking=no -P 2222 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} << EOF
-          cd /htdocs/html/skyrun/backups
+          cd htdocs/html/skyrun/backups
           ls -l
           bye
           EOF
