@@ -10,6 +10,15 @@
     
     // Admin-spezifische Variablen
     let adminAuthenticated = false;
+    let csrfToken = '';
+
+    // FormData mit CSRF-Token erstellen
+    function adminFormData(action) {
+        const fd = new FormData();
+        fd.append('action', action);
+        if (csrfToken) fd.append('csrf_token', csrfToken);
+        return fd;
+    }
     
     // DOM-Elemente für Admin
     const adminLoginBtn = document.getElementById('admin-login-btn');
@@ -50,6 +59,7 @@
 
             if (result.success) {
                 adminAuthenticated = true;
+                csrfToken = result.csrfToken || '';
                 adminContent.classList.remove('hidden');
                 adminUsernameInput.value = '';
                 adminPasswordInput.value = '';
@@ -72,11 +82,11 @@
     
     // Admin-Logout
     async function handleAdminLogout() {
-        const formData = new FormData();
-        formData.append('action', 'adminLogout');
+        const formData = adminFormData('adminLogout');
         const response = await fetch(API_URL, { method: 'POST', body: formData });
         if (response.ok) {
             adminAuthenticated = false;
+            csrfToken = '';
             adminContent.classList.add('hidden');
             document.querySelector('.admin-panel .form-group').classList.remove('hidden');
             document.getElementById('admin-logout-btn').remove();
@@ -106,8 +116,7 @@
         const participantsListBody = document.getElementById('participants-list');
         participantsListBody.innerHTML = '<tr><td colspan="6">Lade Teilnehmer...</td></tr>';
 
-        const formData = new FormData();
-        formData.append('action', 'getParticipants');
+        const formData = adminFormData('getParticipants');
         formData.append('date', selectedDate);
 
         try {
@@ -155,8 +164,7 @@
         const waitlistTableBody = document.getElementById('waitlist-list');
         waitlistTableBody.innerHTML = '<tr><td colspan="6">Lade Warteliste...</td></tr>';
 
-        const formData = new FormData();
-        formData.append('action', 'getParticipants');
+        const formData = adminFormData('getParticipants');
         formData.append('date', selectedDate);
 
         try {
@@ -204,8 +212,7 @@
         peakBookListBody.innerHTML = '<tr><td colspan="2">Lade Gipfelbuch...</td></tr>';
 
         const buildingFilter = document.getElementById('peakbook-building-filter');
-        const formData = new FormData();
-        formData.append('action', 'getPeakBook');
+        const formData = adminFormData('getPeakBook');
         if (buildingFilter && buildingFilter.value) {
             formData.append('building', buildingFilter.value);
         }
@@ -243,8 +250,7 @@
     async function removeParticipant(id, date) {
         if (!adminAuthenticated || !confirm(`Registrierung (ID: ${id}) entfernen?`)) return;
 
-        const formData = new FormData();
-        formData.append('action', 'removeParticipant');
+        const formData = adminFormData('removeParticipant');
         formData.append('id', id);
         formData.append('date', date);
 
@@ -273,8 +279,7 @@
     async function promoteFromWaitlist(id, date) {
         if (!adminAuthenticated || !confirm(`ID ${id} hochstufen?`)) return;
 
-        const formData = new FormData();
-        formData.append('action', 'promoteFromWaitlist');
+        const formData = adminFormData('promoteFromWaitlist');
         formData.append('id', id);
         formData.append('date', date);
 
@@ -303,8 +308,7 @@
     async function exportAsCSV() {
         if (!adminAuthenticated) return;
         const selectedDate = exportDateSelect.value;
-        const formData = new FormData();
-        formData.append('action', 'getParticipants');
+        const formData = adminFormData('getParticipants');
         formData.append('date', selectedDate);
 
         const response = await fetch(API_URL, { method: 'POST', body: formData });
@@ -332,8 +336,7 @@
     // Daten als JSON exportieren
     async function exportAsJSON() {
         if (!adminAuthenticated) return;
-        const formData = new FormData();
-        formData.append('action', 'exportData');
+        const formData = adminFormData('exportData');
 
         const response = await fetch(API_URL, { method: 'POST', body: formData });
         if (!response.ok) {
@@ -361,8 +364,7 @@
         const reader = new FileReader();
         reader.onload = async e => {
             const jsonData = e.target.result;
-            const formData = new FormData();
-            formData.append('action', 'importData');
+            const formData = adminFormData('importData');
             formData.append('data', jsonData);
 
             importBtn.disabled = true;
@@ -402,8 +404,7 @@
             return;
         }
 
-        const formData = new FormData();
-        formData.append('action', 'updateConfig');
+        const formData = adminFormData('updateConfig');
         formData.append('maxParticipants', maxParticipants);
         formData.append('runDay', 4); // Dummy-Wert für Kompatibilität
         formData.append('runTime', '19:00'); // Dummy-Wert für Kompatibilität
@@ -486,8 +487,7 @@
             return;
         }
 
-        const formData = new FormData();
-        formData.append('action', 'addTrainingDate');
+        const formData = adminFormData('addTrainingDate');
         formData.append('date', date);
         formData.append('time', time);
         formData.append('building', building);
@@ -522,8 +522,7 @@
     async function deleteTrainingDate(id) {
         if (!adminAuthenticated || !confirm('Termin wirklich löschen?')) return;
 
-        const formData = new FormData();
-        formData.append('action', 'deleteTrainingDate');
+        const formData = adminFormData('deleteTrainingDate');
         formData.append('id', id);
 
         try {
@@ -558,8 +557,7 @@
             return;
         }
 
-        const formData = new FormData();
-        formData.append('action', 'changePassword');
+        const formData = adminFormData('changePassword');
         formData.append('currentPassword', currentPassword);
         formData.append('newPassword', newPassword);
 

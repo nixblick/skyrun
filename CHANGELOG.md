@@ -6,10 +6,12 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 ## [3.1.0] - 2026-03-09
 
 ### Hinzugefügt
+- **CSRF-Schutz** für alle schreibenden Admin-Aktionen (Token-basiert, pro Session)
 - E-Mail-Benachrichtigung bei automatischer Hochstufung von der Warteliste (`removeParticipant`)
 - Datumsformat-Validierung (`YYYY-MM-DD`) bei Registrierung
 - `.htaccess` blockiert Zugriff auf ungenutztes `/api/`-Verzeichnis
 - `config.php.example` als Vorlage für neue Installationen
+- `rotate_credentials.sh` für automatisierte Passwort-Rotation (lokal, nicht in Git)
 
 ### Geändert
 - CORS auf `https://www.mein-computerfreund.de` eingeschränkt (statt `*`)
@@ -17,6 +19,7 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 - `$time` in E-Mail-Templates mit `htmlspecialchars()` escaped
 - HTML-Entities in E-Mails vereinheitlicht (`H&ouml;henmeter` statt rohes `ö`)
 - Backup-Token aus `api.php` in `config.php` ausgelagert (nicht mehr hardcoded)
+- Admin-JS nutzt zentrale `adminFormData()`-Funktion für alle API-Aufrufe
 
 ### Entfernt
 - `config.php` aus Git-Historie entfernt (enthielt Klartext-Passwörter)
