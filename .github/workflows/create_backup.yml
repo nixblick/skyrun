@@ -12,7 +12,7 @@ jobs:
         run: |
           echo "Rufe Backup-Endpoint auf..."
           RESPONSE=$(curl -s -w "\n%{http_code}" -L -k \
-            "https://mein-computerfreund.de/skyrun/api.php?action=createBackup&token=${{ secrets.BACKUP_TOKEN }}")
+            "https://www.mein-computerfreund.de/api.php?action=createBackup&token=${{ secrets.BACKUP_TOKEN }}")
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -n -1)
           echo "HTTP Status: $HTTP_CODE"
