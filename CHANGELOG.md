@@ -7,6 +7,7 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
 ### Hinzugefügt
 - **CSRF-Schutz** für alle schreibenden Admin-Aktionen (Token-basiert, pro Session)
+- **Admin-Session Timeout** nach 30 Minuten Inaktivität (automatischer Logout)
 - E-Mail-Benachrichtigung bei automatischer Hochstufung von der Warteliste (`removeParticipant`)
 - Datumsformat-Validierung (`YYYY-MM-DD`) bei Registrierung
 - `.htaccess` blockiert Zugriff auf ungenutztes `/api/`-Verzeichnis

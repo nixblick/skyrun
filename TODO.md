@@ -6,6 +6,4 @@
 
 ## VERBESSERUNGEN
 
-- [ ] **`config.php` durch `.env`-basierte Konfiguration ersetzen** — Saubere Trennung von Code und Konfiguration
 - [ ] **Rate Limiting für Registrierung** — Aktuell nur CAPTCHA, kein IP-basiertes Rate Limiting
-- [ ] **Admin-Session Timeout** — Kein automatischer Logout nach Inaktivität

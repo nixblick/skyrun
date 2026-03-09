@@ -119,7 +119,21 @@ function verifyAdminLogin($username, $password) {
 }
 
 function isAdminAuthenticated() {
-    return isset($_SESSION['admin_authenticated']) && $_SESSION['admin_authenticated'] === true;
+    if (!isset($_SESSION['admin_authenticated']) || $_SESSION['admin_authenticated'] !== true) {
+        return false;
+    }
+
+    // Session-Timeout: 30 Minuten Inaktivität
+    $timeout = 30 * 60;
+    if (isset($_SESSION['admin_last_activity']) && (time() - $_SESSION['admin_last_activity']) > $timeout) {
+        // Session abgelaufen — aufräumen
+        unset($_SESSION['admin_authenticated'], $_SESSION['admin_username'], $_SESSION['admin_last_activity'], $_SESSION['csrf_token']);
+        return false;
+    }
+
+    // Letzte Aktivität aktualisieren
+    $_SESSION['admin_last_activity'] = time();
+    return true;
 }
 
 // === Hauptlogik ===
@@ -271,6 +285,7 @@ switch ($action) {
         if (verifyAdminLogin($username, $password)) {
             $_SESSION['admin_authenticated'] = true;
             $_SESSION['admin_username'] = $username;
+            $_SESSION['admin_last_activity'] = time();
             $csrfToken = generateCsrfToken();
             echo json_encode(['success' => true, 'csrfToken' => $csrfToken]);
         } else {
