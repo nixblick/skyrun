@@ -16,6 +16,7 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 - HTTPS-Redirect aktiviert
 - Backup-Token wird per POST statt GET gesendet (kein Leak in Logs)
 - `personCount` auf max. 10 begrenzt
+- Rate Limiting für Admin-Login (max 5 Fehlversuche, dann 60s Sperre)
 - E-Mail-Benachrichtigung bei automatischer Hochstufung von der Warteliste (`removeParticipant`)
 - Datumsformat-Validierung (`YYYY-MM-DD`) bei Registrierung
 - `.htaccess` blockiert Zugriff auf ungenutztes `/api/`-Verzeichnis
