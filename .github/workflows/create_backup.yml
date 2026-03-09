@@ -8,60 +8,30 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Install sshpass
-        run: sudo apt-get install -y -qq sshpass
-
-      - name: Upload and run backup trigger
-        env:
-          SSHPASS: ${{ secrets.FTP_PASSWORD }}
+      - name: Trigger backup via API
         run: |
-          # Trigger-PHP erstellen (Token wird von GitHub Actions eingesetzt)
-          cat > run_backup.php << PHPEOF
-          <?php
-          \$_GET['token'] = '${{ secrets.BACKUP_TOKEN }}';
-          require_once __DIR__ . '/create_backup.php';
-          PHPEOF
-
-          # Per SFTP hochladen
-          sshpass -e sftp -o StrictHostKeyChecking=no -P 2222 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} << EOF
-          cd /htdocs/html/skyrun
-          put run_backup.php
-          bye
-          EOF
-          echo "Trigger-Datei hochgeladen"
-
-      - name: Wait for SFTP sync
-        run: sleep 3
-
-      - name: Execute backup via HTTP
-        run: |
-          echo "Rufe Backup-Trigger auf..."
-          RESPONSE=$(curl -s -o response.txt -w "%{http_code}" -L -k \
-            "https://mein-computerfreund.de/skyrun/run_backup.php")
-          echo "HTTP Status: $RESPONSE"
-          echo "Response:"
-          cat response.txt
-          echo ""
-          if echo "$RESPONSE" | grep -qE "^(200|302)$"; then
-            if grep -q "Backup created" response.txt 2>/dev/null; then
-              echo "Backup erfolgreich erstellt!"
-            else
-              echo "::warning::HTTP $RESPONSE aber keine Backup-Bestaetigung in der Antwort"
-            fi
+          echo "Rufe Backup-Endpoint auf..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -L -k \
+            "https://mein-computerfreund.de/skyrun/api.php?action=createBackup&token=${{ secrets.BACKUP_TOKEN }}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          if echo "$BODY" | grep -q '"success":true'; then
+            echo "Backup erfolgreich!"
           else
-            echo "::error::Backup fehlgeschlagen (HTTP $RESPONSE)"
+            echo "::error::Backup fehlgeschlagen"
             exit 1
           fi
 
-      - name: Cleanup trigger and verify
-        env:
-          SSHPASS: ${{ secrets.FTP_PASSWORD }}
+      - name: Verify backup files
         run: |
-          echo "Raeume auf und pruefe Backups..."
+          sudo apt-get install -y -qq sshpass
+          echo "Pruefe Backup-Dateien..."
           sshpass -e sftp -o StrictHostKeyChecking=no -P 2222 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} << EOF
-          cd /htdocs/html/skyrun
-          rm run_backup.php
-          cd backups
+          cd /htdocs/html/skyrun/backups
           ls -l
           bye
           EOF
+        env:
+          SSHPASS: ${{ secrets.FTP_PASSWORD }}

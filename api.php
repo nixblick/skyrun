@@ -717,6 +717,66 @@ switch ($action) {
         echo json_encode(['success' => $success, 'message' => $success ? 'Termin gelöscht.' : 'Fehler beim Löschen.']);
         break;
 
+    case 'createBackup':
+        // Token-Auth fuer automatisierte Backups (GitHub Actions)
+        $token = $_GET['token'] ?? $_POST['token'] ?? '';
+        $validToken = '***REMOVED***';
+
+        if ($token !== $validToken && !isAdminAuthenticated()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
+        }
+
+        try {
+            $backupDir = __DIR__ . '/backups/';
+            if (!is_dir($backupDir)) {
+                mkdir($backupDir, 0755, true);
+            }
+
+            $backupFile = $backupDir . 'skyrun_backup_' . date('Y-m-d_H-i-s') . '.sql';
+            $tables = ['registrations', 'users', 'config', 'stations', 'training_dates'];
+
+            $output = "-- Skyrun Backup\n-- Date: " . date('Y-m-d H:i:s') . "\n\n";
+
+            foreach ($tables as $table) {
+                $createResult = $conn->query("SHOW CREATE TABLE `$table`");
+                if ($createResult) {
+                    $createRow = $createResult->fetch_assoc();
+                    $output .= "\nDROP TABLE IF EXISTS `$table`;\n";
+                    $output .= $createRow['Create Table'] . ";\n\n";
+                }
+
+                $dataResult = $conn->query("SELECT * FROM `$table`");
+                if ($dataResult) {
+                    while ($row = $dataResult->fetch_assoc()) {
+                        $values = array_map(function($v) use ($conn) {
+                            return $v === null ? 'NULL' : "'" . $conn->real_escape_string($v) . "'";
+                        }, array_values($row));
+                        $output .= "INSERT INTO `$table` VALUES (" . implode(', ', $values) . ");\n";
+                    }
+                }
+            }
+
+            file_put_contents($backupFile, $output);
+
+            // Alte Backups aufraeumen (behalte die letzten 30)
+            $files = glob($backupDir . 'skyrun_backup_*.sql');
+            if (count($files) > 30) {
+                usort($files, function($a, $b) { return filemtime($b) - filemtime($a); });
+                foreach (array_slice($files, 30) as $old) {
+                    unlink($old);
+                }
+            }
+
+            $size = filesize($backupFile);
+            echo json_encode(['success' => true, 'message' => "Backup erstellt: " . basename($backupFile) . " ($size Bytes)"]);
+        } catch (Exception $e) {
+            error_log("Backup-Fehler: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Backup fehlgeschlagen.']);
+        }
+        break;
+
     default:
         echo json_encode(['success' => false, 'message' => 'Ungültige Aktion.']);
 }
