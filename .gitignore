@@ -4,6 +4,7 @@ backups/
 backup_db.php
 create_backup.php
 backup_local.sh
+rotate_credentials.sh
 
 # === Logs ===
 *.log
