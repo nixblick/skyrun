@@ -1,0 +1,53 @@
+<?php
+// /skyrun/config.php.example
+// Kopiere diese Datei nach config.php und trage die echten Werte ein.
+// config.php ist in .gitignore und wird NICHT committed.
+
+// --- Datenbank ---
+define('DB_HOST', 'localhost');
+define('DB_USER', 'DEIN_DB_USER');
+define('DB_PASS', 'DEIN_DB_PASSWORT');
+define('DB_NAME', 'DEIN_DB_NAME');
+
+// --- Zeitzone ---
+define('TIMEZONE', 'Europe/Berlin');
+
+// --- E-Mail ---
+define('MAIL_ENABLED', true);
+define('MAIL_FROM', 'skyrun@example.de');
+define('MAIL_FROM_NAME', 'Anmeldung zum Training für Skyrun');
+define('MAIL_BCC', 'admin@example.de');
+
+// SMTP (nur für PHPMailer)
+define('MAIL_HOST', 'smtp.example.de');
+define('MAIL_PORT', 465);
+define('MAIL_SECURE', 'ssl');
+define('MAIL_USERNAME', 'skyrun@example.de');
+define('MAIL_PASSWORD', 'DEIN_SMTP_PASSWORT');
+
+// --- Backup ---
+define('BACKUP_TOKEN', 'DEIN_BACKUP_TOKEN');
+
+// --- Mail-Funktionen ---
+require_once 'mail-functions.php';
+
+// --- Fehler-Logging ---
+define('ENABLE_ERROR_LOGGING', true);
+define('DISPLAY_PHP_ERRORS', false);
+define('PHP_ERROR_LOG_FILE', __DIR__ . '/php_errors.log');
+
+if (DISPLAY_PHP_ERRORS) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+} else {
+    error_reporting(0);
+    ini_set('display_errors', 0);
+}
+
+if (ENABLE_ERROR_LOGGING) {
+    ini_set('log_errors', 1);
+    ini_set('error_log', PHP_ERROR_LOG_FILE);
+}
+
+date_default_timezone_set(TIMEZONE);
+?>
