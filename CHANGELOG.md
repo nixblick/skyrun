@@ -3,46 +3,56 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
-## [Unreleased]
+## [3.0.0] - 2026-03-09
 
 ### Hinzugefügt
-- TODO.md mit bekannten Issues und Verbesserungsvorschlägen
+- TODO.md mit bekannten Issues aus Code-Review
 - CHANGELOG.md zur Dokumentation aller Änderungen
-- Lokales Backup-Script (`backup_local.sh`) für manuelle DB-Sicherungen
 - `createBackup` API-Endpoint in `api.php` — Token- oder Admin-Session-geschützt
+- Lokales Backup-Toolkit (`backup_local.sh`): create, download, list, verify, restore-test
+- Docker-basierter Restore-Test mit echter MySQL-Datenbank
 - Automatische Bereinigung alter Backups (behält die letzten 30)
 - `training_dates`-Tabelle wird jetzt mitgesichert
 - `DROP TABLE IF EXISTS` vor jedem CREATE im Backup für saubere Wiederherstellung
+- Versionsnummer und Credit im Footer (dezent)
 
 ### Geändert
-- Backup-Workflow nutzt jetzt `api.php?action=createBackup` statt fragilen PHP-Upload-Hack
-- Backup-Workflow läuft wöchentlich (Montag 02:00 UTC) statt täglich
-- .gitignore aufgeräumt und erweitert
+- Backup-Workflow komplett überarbeitet: `api.php?action=createBackup` statt PHP-Upload-Hack
+- Backup-Workflow läuft wöchentlich (Montag 03:00 MEZ) statt täglich
+- .gitignore aufgeräumt und erweitert (backups/, .env, IDE-Ordner, .backup_config)
 
-## [1.5.0] - 2025-12-11
+### Behoben
+- Backup-Workflow war seit September 2025 tot (GitHub Cron-Timeout nach 60 Tagen Inaktivität)
+- SFTP-Pfade korrigiert (relativ zum Home-Verzeichnis)
+- Korrekte Live-URL (www.mein-computerfreund.de)
+
+## [2.0.0] - 2025-05-16
+
+### Geändert
+- Modulare API-Struktur: `api.php` aufgeteilt in `api/registration.php`, `api/admin.php`, `api/mail.php`
+- Router-basiertes Dispatching über `api/index.php`
+
+## [1.5.0] - 2025-02-17
 
 ### Geändert
 - Informationstext auf Startseite aktualisiert ("Skyrun Training" statt "Skyrun")
 - Hinweis "Start in Einsatzkleidung ist pünktlich um 19 Uhr" ergänzt
 - "und/oder" statt "abwechselnd" bei Gebäude-Beschreibung
 
-## [1.4.0] - 2025-12-11
+## [1.4.0] - 2025-02-16
 
 ### Hinzugefügt
 - Uhrzeit aus `training_dates` in Bestätigungsmails eingebunden
 - Pünktlichkeitshinweis in E-Mail-Templates ("Bitte sei pünktlich um X Uhr vor Ort")
-- `$time`-Parameter in `sendRegistrationConfirmation()`
 
 ### Geändert
-- DB-Query holt jetzt `building` UND `time` aus `training_dates`
 - Hochstufungs-E-Mails enthalten jetzt ebenfalls die korrekte Uhrzeit
 
-## [1.3.0] - 2025-12-11
+## [1.3.0] - 2025-02-16
 
 ### Geändert
-- Building-Cards zeigen Bilder jetzt vollständig an (kein Cropping mehr)
-- CSS: `object-fit: cover` und feste Höhe entfernt, `height: auto` gesetzt
-- Neue Gebäudebilder aktualisiert (Messeturm, Trianon)
+- Building-Cards zeigen Bilder vollständig an (kein Cropping mehr)
+- Neue Gebäudebilder (Messeturm, Trianon)
 
 ## [1.2.0] - 2025-12-11
 
@@ -50,24 +60,20 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 - Zweites Gebäude (Trianon) integriert
 - Gebäudespezifische Adressen und Statistiken in E-Mails
 - Building-Cards auf der Startseite
-- Branding auf "Skyrun Training" umgestellt
 
 ## [1.1.0] - 2025-12-11
 
 ### Hinzugefügt
-- Neuer Trainingstermin: 2025-12-11, 19:00
+- Simple Math CAPTCHA als Spam-Schutz
+- Honeypot-Feld gegen Bots
+- Trainings-Termine Verwaltung (CRUD)
+- Konfigurierbarer Lauftag und -frequenz
 
-## [1.0.0] - 2025-12-01
+## [1.0.0] - 2025-04-11
 
 ### Hinzugefügt
-- Simple Math CAPTCHA als Spam-Schutz
-- Modulare API-Struktur unter `/api/` (Router, Registration, Admin, Mail, Auth, Utils)
-- Honeypot-Feld gegen Bots
-- Gebäudefilter im Gipfelbuch (PeakBook)
-- Trainings-Termine Verwaltung (CRUD) im Admin-Bereich
-- Konfigurierbarer Lauftag und -frequenz
 - Registrierungssystem mit Warteliste
 - Admin-Panel mit Login, Teilnehmerverwaltung, Export/Import
 - E-Mail-Bestätigungen (Registrierung, Warteliste, Hochstufung)
 - SFTP-Deploy via GitHub Actions
-- Automatisches DB-Backup via GitHub Actions (täglich 02:00 UTC)
+- Automatisches DB-Backup via GitHub Actions

@@ -201,6 +201,20 @@ footer a:hover {
     text-decoration: underline;
 }
 
+.footer-credit {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #aaa;
+}
+
+.footer-credit a {
+    color: #aaa;
+}
+
+.footer-credit a:hover {
+    color: var(--primary-color);
+}
+
 .hidden {
     display: none !important;
 }
