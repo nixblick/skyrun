@@ -2,7 +2,7 @@
 
 ## KRITISCH - Sicherheit
 
-- [ ] **Credentials aus Git-Historie entfernen** — `config.php` enthält DB-Passwort und SMTP-Passwort im Klartext und wurde committed. Passwörter rotieren (DB + SMTP), dann `config.php` aus Historie entfernen (`git filter-branch` oder `bfg`)
+- [ ] **Passwörter rotieren** — Alte Passwörter aus Git-Historie sind kompromittiert. Bei Goneo ändern: DB-Passwort, SMTP-Passwort (`skyrun@mein-computerfreund.de`), dann in `config.php` auf dem Server aktualisieren. Backup-Token in GitHub Secret (`BACKUP_TOKEN`) und `config.php` erneuern.
 - [ ] **CSRF-Schutz für Admin-Aktionen** — Keine CSRF-Tokens vorhanden. Jede Website kann Admin-Aktionen im Browser eines eingeloggten Admins auslösen
 
 ## VERBESSERUNGEN
