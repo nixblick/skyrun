@@ -10,18 +10,24 @@ Options -Indexes
 <Files "create_backup.php">
     Require all denied
 </Files>
+<Files ".backup_config">
+    Require all denied
+</Files>
+<Files ".env">
+    Require all denied
+</Files>
 
+# SQL-Dumps und Logdateien blockieren
+<FilesMatch "\.(sql|log)$">
+    Require all denied
+</FilesMatch>
 
-# Optional: Verhindert direkten Zugriff auf die API-Datei, falls alle Zugriffe über index.html laufen sollen
-# <Files "api.php">
-#     Require all denied
-# </Files>
+# Versteckte Dateien blockieren (z.B. .gitignore, .backup_config)
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
 
-# Optional: Rewrite Regeln (wenn du z.B. /api statt /api.php nutzen willst)
-# RewriteEngine On
-# RewriteRule ^api$ api.php [L]
-
-# Optional: Erzwinge HTTPS (wenn SSL-Zertifikat vorhanden)
-# RewriteEngine On
-# RewriteCond %{HTTPS} off
-# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# HTTPS erzwingen
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

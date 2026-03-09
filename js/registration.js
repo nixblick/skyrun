@@ -59,6 +59,7 @@
         formData.append('acceptWaitlist', acceptWaitlist);
         formData.append('personCount', personCount);
         formData.append('captcha', captcha);
+        formData.append('website', document.getElementById('website').value);
 
         const submitButton = document.getElementById('submit-btn');
         submitButton.disabled = true;
