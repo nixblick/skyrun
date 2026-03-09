@@ -110,6 +110,27 @@ function handleAdminAction($action, $conn) {
                             $updateStmt->execute();
                             $availableSpots -= $waitlistEntry['personCount'];
                             $updateStmt->close();
+
+                            // Hochgestuften Teilnehmer per E-Mail benachrichtigen
+                            if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
+                                $detailsStmt = $conn->prepare("SELECT name, email, station, personCount, building FROM registrations WHERE id = ?");
+                                $detailsStmt->bind_param("i", $waitlistEntry['id']);
+                                $detailsStmt->execute();
+                                $details = $detailsStmt->get_result()->fetch_assoc();
+                                $detailsStmt->close();
+
+                                if ($details) {
+                                    $timeStmt = $conn->prepare("SELECT TIME_FORMAT(time, '%H:%i') as time FROM training_dates WHERE date = ?");
+                                    $timeStmt->bind_param("s", $date);
+                                    $timeStmt->execute();
+                                    $timeRow = $timeStmt->get_result()->fetch_assoc();
+                                    $timeStmt->close();
+                                    $promoteTime = $timeRow['time'] ?? '19:00';
+
+                                    sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm', $promoteTime);
+                                    error_log("Auto-Hochstufungs-E-Mail gesendet an: {$details['email']} für Datum: $date");
+                                }
+                            }
                         } else {
                             break;
                         }

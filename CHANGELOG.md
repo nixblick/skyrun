@@ -3,6 +3,23 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.1.0] - 2026-03-09
+
+### Hinzugefügt
+- E-Mail-Benachrichtigung bei automatischer Hochstufung von der Warteliste (`removeParticipant`)
+- Datumsformat-Validierung (`YYYY-MM-DD`) bei Registrierung
+- `.htaccess` blockiert Zugriff auf ungenutztes `/api/`-Verzeichnis
+
+### Geändert
+- CORS auf `https://www.mein-computerfreund.de` eingeschränkt (statt `*`)
+- Debug-Modus in `api/index.php` deaktiviert (Fehler nur noch ins Log)
+- `$time` in E-Mail-Templates mit `htmlspecialchars()` escaped
+- HTML-Entities in E-Mails vereinheitlicht (`H&ouml;henmeter` statt rohes `ö`)
+
+### Entfernt
+- Unbenutzte Variable `$stations` in `api.php` und `api/registration.php`
+- Erledigte Punkte aus TODO.md (stehen im CHANGELOG)
+
 ## [3.0.0] - 2026-03-09
 
 ### Hinzugefügt
