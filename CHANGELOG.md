@@ -8,6 +8,14 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 ### Hinzugefügt
 - **CSRF-Schutz** für alle schreibenden Admin-Aktionen (Token-basiert, pro Session)
 - **Admin-Session Timeout** nach 30 Minuten Inaktivität (automatischer Logout)
+- Gehärtete Session-Cookies (httponly, secure, samesite=Strict, strict_mode)
+- `session_regenerate_id()` nach Login gegen Session Fixation
+- Timing-sichere Login-Prüfung (verhindert Username-Enumeration)
+- Honeypot-Feld ins Formular verschoben (war außerhalb, daher wirkungslos)
+- `.htaccess`: Zugriff auf `.sql`, `.log`, versteckte Dateien und `.backup_config` blockiert
+- HTTPS-Redirect aktiviert
+- Backup-Token wird per POST statt GET gesendet (kein Leak in Logs)
+- `personCount` auf max. 10 begrenzt
 - E-Mail-Benachrichtigung bei automatischer Hochstufung von der Warteliste (`removeParticipant`)
 - Datumsformat-Validierung (`YYYY-MM-DD`) bei Registrierung
 - `.htaccess` blockiert Zugriff auf ungenutztes `/api/`-Verzeichnis

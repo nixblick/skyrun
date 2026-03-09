@@ -2,7 +2,11 @@
 // config.php einbinden
 require_once 'config.php';
 
-// Session starten
+// Session härten und starten
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_secure', 1);
+ini_set('session.cookie_samesite', 'Strict');
+ini_set('session.use_strict_mode', 1);
 session_start();
 
 // CAPTCHA generieren
@@ -115,6 +119,8 @@ function verifyAdminLogin($username, $password) {
     if ($row = $result->fetch_assoc()) {
         return password_verify($password, $row['password_hash']);
     }
+    // Dummy-Verify gegen Timing-Angriffe (Username-Enumeration verhindern)
+    password_verify($password, '$2y$10$dummyhashtopreventtimingleakXXXXXXXXXXXXXXXXXXXXXX');
     return false;
 }
 
@@ -203,7 +209,7 @@ switch ($action) {
         $station = trim($_POST['station'] ?? '50 - Sonstige'); // Default Wache
         $date = trim($_POST['date'] ?? '');
         $acceptWaitlist = filter_var($_POST['acceptWaitlist'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        $personCount = filter_var($_POST['personCount'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $personCount = filter_var($_POST['personCount'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 10]]);
 
         if (empty($name) || empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || empty($date) || $personCount === false) {
             echo json_encode(['success' => false, 'message' => 'Pflichtfelder fehlen oder ungültig.']);
@@ -283,6 +289,7 @@ switch ($action) {
         $password = trim($_POST['password'] ?? '');
 
         if (verifyAdminLogin($username, $password)) {
+            session_regenerate_id(true);
             $_SESSION['admin_authenticated'] = true;
             $_SESSION['admin_username'] = $username;
             $_SESSION['admin_last_activity'] = time();
