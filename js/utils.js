@@ -60,6 +60,42 @@
         registrationStatus.classList.remove('hidden');
     }
     
+    /**
+     * Theme Toggle (Light/Dark)
+     */
+    function initTheme() {
+        var saved = localStorage.getItem('skyrun-theme');
+        if (saved === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+        updateToggleIcon();
+
+        var btn = document.getElementById('theme-toggle');
+        if (btn) {
+            btn.addEventListener('click', function() {
+                var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                if (isDark) {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('skyrun-theme', 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('skyrun-theme', 'dark');
+                }
+                updateToggleIcon();
+            });
+        }
+    }
+
+    function updateToggleIcon() {
+        var btn = document.getElementById('theme-toggle');
+        if (!btn) return;
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        btn.innerHTML = isDark ? '&#9788;' : '&#9790;';
+        btn.title = isDark ? 'Helles Theme' : 'Dunkles Theme';
+    }
+
+    document.addEventListener('DOMContentLoaded', initTheme);
+
     // Funktionen global verfügbar machen
     window.skyrunApp = {
         formatDate: formatDate,

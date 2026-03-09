@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.2.0] - 2026-03-09
+
+### Hinzugefügt
+- **Dark/Light Theme Toggle** — Mond/Sonne-Symbol im Footer zum Umschalten zwischen hellem und dunklem Theme. Auswahl wird in localStorage gespeichert. Alle Farben auf CSS-Variablen umgestellt, harmonisches Dark-Theme mit Blau-Grau-Farbfamilie.
+
 ## [3.1.1] - 2026-03-09
 
 ### Behoben
