@@ -7,5 +7,6 @@
 
 ## FEATURES
 
+- [ ] **Dark/Light Theme Toggle** — Sonne/Mond-Symbol im Footer zum Umschalten. Erfordert CSS-Variablen-Refactoring (~20-25 hardcodierte Farben), Toggle-Button + localStorage-Persistenz.
 - [ ] **Countdown "Noch X Tage bis zum nächsten Lauf"** — Für Trianon und MesseTurm jeweils anzeigen, wie viele Tage bis zum nächsten Termin verbleiben.
 - [ ] **Getrennte Teilnehmer-Counter pro Gebäude** — Separate Anmeldezähler für Trianon und MesseTurm auf der Startseite anzeigen.
