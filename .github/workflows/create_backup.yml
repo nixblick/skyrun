@@ -10,8 +10,8 @@ jobs:
     steps:
       - name: Trigger backup via HTTP
         run: |
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.FTP_SERVER }}/skyrun/create_backup.php?token=${{ secrets.BACKUP_TOKEN }}")
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            "https://${{ secrets.FTP_SERVER }}/skyrun/create_backup.php?token=${{ secrets.BACKUP_TOKEN }}")
           echo "HTTP Status: $RESPONSE"
           if [ "$RESPONSE" != "200" ]; then
             echo "FEHLER: Backup fehlgeschlagen (HTTP $RESPONSE)"
