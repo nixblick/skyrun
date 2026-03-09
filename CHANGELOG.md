@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.1.1] - 2026-03-09
+
+### Behoben
+- **E-Mail-Zustellung fehlgeschlagen** — Envelope-Sender (`-f`) explizit auf `skyrun@mein-computerfreund.de` gesetzt. Ohne den Parameter nutzte PHP `mail()` den Server-Default (`andre@creavisions.de`), was bei GMX und anderen Providern zum SPF-Reject führte (554 Policy Restriction).
+
 ## [3.1.0] - 2026-03-09
 
 ### Hinzugefügt
@@ -22,6 +27,19 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 - `.htaccess` blockiert Zugriff auf ungenutztes `/api/`-Verzeichnis
 - `config.php.example` als Vorlage für neue Installationen
 - `rotate_credentials.sh` für automatisierte Passwort-Rotation (lokal, nicht in Git)
+
+### Behoben
+- **Race Condition bei Registrierung** — Transaction mit `SELECT ... FOR UPDATE` verhindert parallele Überbuchung
+- **PII in Error-Logs maskiert** — Name, E-Mail, Telefon in Request-Logs und allen individuellen `error_log()`-Aufrufen maskiert
+- **Import-Daten-Validierung** — Datumsformat (`YYYY-MM-DD`), `registrationTime` und `personCount` (max. 10) werden validiert
+- **Import-Transaction abgesichert** — `try/catch` mit `rollback()` bei DB-Fehlern
+- **Backup-Token timing-safe verglichen** — `hash_equals()` statt `!==` gegen Timing-Angriffe
+- **Dummy-Hash für Timing-Schutz** — Echter bcrypt-Hash statt ungültigem String bei fehlgeschlagenem Login
+- **Rate Limiting file-basiert** — Login-Zähler pro IP im Dateisystem statt Session (nicht mehr umgehbar durch Cookie-Löschung)
+- **`getConfig` eingeschränkt** — Öffentlich nur noch `max_participants`, alle anderen Config-Werte nur für Admin
+- **`station` gegen DB validiert** — Wache wird gegen `stations`-Tabelle geprüft, Fallback auf `50 - Sonstige`
+- **`getStats` Datumsvalidierung** — `preg_match` auf `YYYY-MM-DD` wie bei allen anderen Datum-Eingaben
+- **Registrierung nur für gültige Zukunftstermine** — Datum muss in `training_dates` existieren und `>= heute` sein
 
 ### Geändert
 - CORS auf `https://www.mein-computerfreund.de` eingeschränkt (statt `*`)

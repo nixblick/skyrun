@@ -29,10 +29,10 @@ function sendMail($to, $subject, $message, $bcc = '') {
         $headers[] = 'Bcc: ' . $bcc;
     }
 
-    $success = mail($to, $subject, $message, implode("\r\n", $headers));
+    $success = mail($to, $subject, $message, implode("\r\n", $headers), '-f ' . $fromEmail);
 
     if (!$success) {
-        error_log("E-Mail konnte nicht gesendet werden an: $to");
+        error_log("E-Mail konnte nicht gesendet werden an: " . substr($to, 0, 1) . "***@***");
     }
 
     return $success;
