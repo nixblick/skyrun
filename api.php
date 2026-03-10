@@ -120,7 +120,7 @@ function verifyAdminLogin($username, $password) {
         return password_verify($password, $row['password_hash']);
     }
     // Dummy-Verify gegen Timing-Angriffe (Username-Enumeration verhindern)
-    password_verify($password, '$2y$10$dummyhashtopreventtimingleakXXXXXXXXXXXXXXXXXXXXXX');
+    password_verify($password, '$2y$10$pXuKixXIATPuzG4dxZJNa.CZsmcUqPVyXPyMTDpzD5e7V5H2l3cSW');
     return false;
 }
 
@@ -159,10 +159,19 @@ if (!empty($_GET)) {
 if (!empty($_POST)) {
     $safePost = $_POST;
     // Sensible Felder maskieren
-    $sensitiveFields = ['password', 'currentPassword', 'newPassword', 'confirmPassword', 'MAIL_PASSWORD'];
+    $sensitiveFields = ['password', 'currentPassword', 'newPassword', 'confirmPassword', 'MAIL_PASSWORD', 'name', 'email', 'phone'];
     foreach ($sensitiveFields as $field) {
-        if (isset($safePost[$field])) {
-            $safePost[$field] = '********';
+        if (isset($safePost[$field]) && !empty($safePost[$field])) {
+            $val = $safePost[$field];
+            if ($field === 'email') {
+                // user@example.com → u***@e***.com
+                $parts = explode('@', $val);
+                $safePost[$field] = substr($parts[0], 0, 1) . '***@' . (isset($parts[1]) ? substr($parts[1], 0, 1) . '***' : '***');
+            } elseif (in_array($field, ['name', 'phone'])) {
+                $safePost[$field] = substr($val, 0, 2) . '***';
+            } else {
+                $safePost[$field] = '********';
+            }
         }
     }
     error_log("POST: " . print_r($safePost, true));
@@ -222,20 +231,56 @@ switch ($action) {
             exit;
         }
 
+        // Wache gegen bekannte Werte validieren (Whitelist aus DB + HTML-Optionen)
+        $stationStmt = $conn->prepare("SELECT id FROM stations WHERE CONCAT(code, ' - ', name) = ? OR code = ? OR name = ?");
+        $stationStmt->bind_param("sss", $station, $station, $station);
+        $stationStmt->execute();
+        if ($stationStmt->get_result()->num_rows === 0) {
+            // Zusätzlich gegen Sonderwerte prüfen (OF - Langen etc.)
+            $allowedExtra = ['OF - Langen'];
+            if (!in_array($station, $allowedExtra, true)) {
+                $station = '50 - Sonstige';
+            }
+        }
+        $stationStmt->close();
+
+        // Termin muss existieren und in der Zukunft liegen
+        $dateCheckStmt = $conn->prepare("SELECT id FROM training_dates WHERE date = ? AND date >= CURDATE()");
+        $dateCheckStmt->bind_param("s", $date);
+        $dateCheckStmt->execute();
+        if ($dateCheckStmt->get_result()->num_rows === 0) {
+            echo json_encode(['success' => false, 'message' => 'Kein gültiger Trainingstermin für dieses Datum.']);
+            $dateCheckStmt->close();
+            exit;
+        }
+        $dateCheckStmt->close();
+
+        // Transaction starten um Race Condition bei Kapazitätsprüfung zu verhindern
+        $conn->begin_transaction();
+
+        try {
         $stmt = $conn->prepare("SELECT id FROM registrations WHERE email = ? AND date = ?");
         $stmt->bind_param("ss", $email, $date);
         $stmt->execute();
         if ($stmt->get_result()->num_rows > 0) {
+            $conn->rollback();
             echo json_encode(['success' => false, 'message' => 'E-Mail bereits für dieses Datum registriert.']);
             exit;
         }
         $stmt->close();
 
+        // Kapazität mit Zeilensperre prüfen (FOR UPDATE verhindert parallele Überbuchung)
+        $lockStmt = $conn->prepare("SELECT COALESCE(SUM(personCount), 0) as total FROM registrations WHERE date = ? AND waitlisted = 0 FOR UPDATE");
+        $lockStmt->bind_param("s", $date);
+        $lockStmt->execute();
+        $participantsCount = (int)$lockStmt->get_result()->fetch_assoc()['total'];
+        $lockStmt->close();
+
         $maxParticipants = getMaxParticipants();
-        $participantsCount = countParticipantsForDate($date);
         $isWaitlisted = ($participantsCount + $personCount) > $maxParticipants;
 
         if ($isWaitlisted && !$acceptWaitlist) {
+            $conn->rollback();
             echo json_encode(['success' => false, 'message' => "Nur noch " . ($maxParticipants - $participantsCount) . " Plätze frei."]);
             exit;
         }
@@ -254,26 +299,32 @@ switch ($action) {
         $stmt->bind_param("sssssiis", $name, $email, $phone, $station, $date, $waitlistedInt, $personCount, $building);
 
         if ($stmt->execute()) {
+            $conn->commit();
+
             // E-Mail-Bestätigung senden, wenn aktiviert
             if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
                 sendRegistrationConfirmation($email, $name, $date, $personCount, $isWaitlisted, $station, $building, $trainingTime);
-
-                // Mail-Versuch loggen
-                error_log("Bestätigungs-E-Mail gesendet an: $email für Datum: $date");
+                error_log("Bestätigungs-E-Mail gesendet an: " . substr($email, 0, 1) . "***@*** für Datum: $date");
             }
-            
+
             echo json_encode(['success' => true, 'message' => $isWaitlisted ? 'Auf Warteliste gesetzt.' : 'Anmeldung erfolgreich.', 'isWaitlisted' => $isWaitlisted]);
         } else {
+            $conn->rollback();
             error_log("INSERT Fehler: " . $stmt->error);
             echo json_encode(['success' => false, 'message' => 'Registrierungsfehler.']);
         }
         $stmt->close();
+        } catch (Exception $e) {
+            $conn->rollback();
+            error_log("Registrierung Transaction-Fehler: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Registrierungsfehler.']);
+        }
         break;
 
     case 'getStats':
         $date = trim($_GET['date'] ?? '');
-        if (empty($date)) {
-            echo json_encode(['success' => false, 'message' => 'Kein Datum angegeben']);
+        if (empty($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            echo json_encode(['success' => false, 'message' => 'Kein oder ungültiges Datum angegeben.']);
             exit;
         }
         echo json_encode([
@@ -285,19 +336,20 @@ switch ($action) {
         break;
 
     case 'adminLogin':
-        // Rate Limiting: max 5 Fehlversuche, dann 60s Sperre
+        // Rate Limiting: file-basiert pro IP (nicht Session, da sonst umgehbar)
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $rateLimitKey = 'login_attempts_' . md5($ip);
+        $rateLimitDir = sys_get_temp_dir() . '/skyrun_ratelimit';
+        if (!is_dir($rateLimitDir)) @mkdir($rateLimitDir, 0700, true);
+        $rateLimitFile = $rateLimitDir . '/' . md5($ip) . '.json';
 
-        if (!isset($_SESSION[$rateLimitKey])) {
-            $_SESSION[$rateLimitKey] = ['count' => 0, 'last_attempt' => 0];
+        $attempts = ['count' => 0, 'last_attempt' => 0];
+        if (file_exists($rateLimitFile)) {
+            $attempts = json_decode(file_get_contents($rateLimitFile), true) ?: $attempts;
         }
-
-        $attempts = &$_SESSION[$rateLimitKey];
 
         // Sperre abgelaufen? Zähler zurücksetzen
         if ($attempts['count'] >= 5 && (time() - $attempts['last_attempt']) > 60) {
-            $attempts['count'] = 0;
+            $attempts = ['count' => 0, 'last_attempt' => 0];
         }
 
         if ($attempts['count'] >= 5) {
@@ -310,7 +362,8 @@ switch ($action) {
         $password = trim($_POST['password'] ?? '');
 
         if (verifyAdminLogin($username, $password)) {
-            $attempts['count'] = 0;
+            // Erfolg: Zähler löschen
+            if (file_exists($rateLimitFile)) @unlink($rateLimitFile);
             session_regenerate_id(true);
             $_SESSION['admin_authenticated'] = true;
             $_SESSION['admin_username'] = $username;
@@ -320,6 +373,7 @@ switch ($action) {
         } else {
             $attempts['count']++;
             $attempts['last_attempt'] = time();
+            file_put_contents($rateLimitFile, json_encode($attempts), LOCK_EX);
             $remaining = 5 - $attempts['count'];
             $msg = $remaining > 0
                 ? "Ungültige Zugangsdaten. Noch $remaining Versuch(e)."
@@ -434,7 +488,7 @@ switch ($action) {
                                 $promoteTime = $timeRow['time'] ?? '19:00';
 
                                 sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm', $promoteTime);
-                                error_log("Auto-Hochstufungs-E-Mail gesendet an: {$details['email']} für Datum: $date");
+                                error_log("Auto-Hochstufungs-E-Mail gesendet an: " . substr($details['email'], 0, 1) . "***@*** für Datum: $date");
                             }
                         }
                     } else {
@@ -502,7 +556,7 @@ switch ($action) {
                         $promoteTime = $timeRow['time'] ?? '19:00';
 
                         sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm', $promoteTime);
-                        error_log("Hochstufungs-E-Mail gesendet an: {$details['email']} für Datum: $date");
+                        error_log("Hochstufungs-E-Mail gesendet an: " . substr($details['email'], 0, 1) . "***@*** für Datum: $date");
                     }
                 }
                 
@@ -556,21 +610,32 @@ switch ($action) {
         $importCount = 0;
         $skipCount = 0;
 
+        try {
         $checkStmt = $conn->prepare("SELECT id FROM registrations WHERE email = ? AND date = ?");
         $insertStmt = $conn->prepare("INSERT INTO registrations (name, email, phone, station, date, waitlisted, registrationTime, personCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
         foreach ($importedData as $date => $groups) {
+            // Datumsformat validieren (YYYY-MM-DD)
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                $skipCount += count($groups['participants'] ?? []) + count($groups['waitlist'] ?? []);
+                continue;
+            }
+
             $entries = array_merge($groups['participants'] ?? [], $groups['waitlist'] ?? []);
             foreach ($entries as $entry) {
-                if (empty($entry['name']) || empty($entry['email']) || !filter_var($entry['email'], FILTER_VALIDATE_EMAIL) || empty($date)) {
+                if (empty($entry['name']) || empty($entry['email']) || !filter_var($entry['email'], FILTER_VALIDATE_EMAIL)) {
                     $skipCount++;
                     continue;
                 }
                 $phone = $entry['phone'] ?? '';
                 $station = $entry['station'] ?? '50 - Sonstige';
                 $waitlisted = isset($entry['waitlisted']) ? (int)(bool)$entry['waitlisted'] : 0;
-                $personCount = filter_var($entry['personCount'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
+                $personCount = filter_var($entry['personCount'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 10]]) ?: 1;
                 $registrationTime = $entry['registrationTime'] ?? date('Y-m-d H:i:s');
+                // registrationTime validieren (YYYY-MM-DD HH:MM:SS)
+                if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $registrationTime)) {
+                    $registrationTime = date('Y-m-d H:i:s');
+                }
 
                 $checkStmt->bind_param("ss", $entry['email'], $date);
                 $checkStmt->execute();
@@ -588,6 +653,11 @@ switch ($action) {
         $insertStmt->close();
         $conn->commit();
         echo json_encode(['success' => true, 'message' => "$importCount importiert, $skipCount übersprungen."]);
+        } catch (Exception $e) {
+            $conn->rollback();
+            error_log("Import Transaction-Fehler: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Importfehler.']);
+        }
         break;
 
     case 'updateConfig':
@@ -622,18 +692,23 @@ switch ($action) {
         break;
 
     case 'getConfig':
-        $result = $conn->query("SELECT `key`, `value` FROM config");
-        $config = [];
-        while ($row = $result->fetch_assoc()) {
-            $config[$row['key']] = ($row['key'] === 'max_participants' || $row['key'] === 'run_day') ? (int)$row['value'] : $row['value'];
+        if (isAdminAuthenticated()) {
+            // Admin sieht alles
+            $result = $conn->query("SELECT `key`, `value` FROM config");
+            $config = [];
+            while ($row = $result->fetch_assoc()) {
+                $config[$row['key']] = ($row['key'] === 'max_participants' || $row['key'] === 'run_day') ? (int)$row['value'] : $row['value'];
+            }
+            $config += [
+                'max_participants' => 25,
+                'run_day' => 4,
+                'run_time' => '19:00',
+                'run_frequency' => 'weekly'
+            ];
+        } else {
+            // Öffentlich: nur max_participants
+            $config = ['max_participants' => (int)getMaxParticipants()];
         }
-        // Default-Werte setzen
-        $config += [
-            'max_participants' => 25, 
-            'run_day' => 4, 
-            'run_time' => '19:00',
-            'run_frequency' => 'weekly'  // Neuer Default
-        ];
         echo json_encode(['success' => true, 'config' => $config]);
         break;
 
@@ -825,7 +900,7 @@ switch ($action) {
         // Token-Auth fuer automatisierte Backups (GitHub Actions)
         $token = $_GET['token'] ?? $_POST['token'] ?? '';
 
-        if ((!defined('BACKUP_TOKEN') || $token !== BACKUP_TOKEN) && !isAdminAuthenticated()) {
+        if ((!defined('BACKUP_TOKEN') || !hash_equals(BACKUP_TOKEN, $token)) && !isAdminAuthenticated()) {
             http_response_code(403);
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
