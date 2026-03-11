@@ -96,11 +96,37 @@
 
     document.addEventListener('DOMContentLoaded', initTheme);
 
+    /**
+     * Event an nixblick Analytics senden (als virtueller Pageview)
+     * Events erscheinen im Dashboard als Pfade wie /evt/admin-login
+     *
+     * @param {string} eventName Event-Name (z.B. 'admin-login', 'registration')
+     */
+    function trackEvent(eventName) {
+        var endpoint = 'https://static.nixblick.de/analytics/collect.php';
+        var data = {
+            s: 'mein-computerfreund.de',
+            p: '/evt/' + eventName,
+            r: '',
+            w: window.innerWidth,
+            h: window.innerHeight,
+            t: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+            ts: Date.now()
+        };
+        var payload = JSON.stringify(data);
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(endpoint, new Blob([payload], { type: 'application/json' }));
+        } else {
+            fetch(endpoint, { method: 'POST', body: payload, keepalive: true, headers: { 'Content-Type': 'application/json' } }).catch(function() {});
+        }
+    }
+
     // Funktionen global verfügbar machen
     window.skyrunApp = {
         formatDate: formatDate,
         escapeHTML: escapeHTML,
         downloadFile: downloadFile,
-        showStatus: showStatus
+        showStatus: showStatus,
+        trackEvent: trackEvent
     };
 })();

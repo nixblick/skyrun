@@ -58,6 +58,7 @@
             const result = await response.json();
 
             if (result.success) {
+                window.skyrunApp.trackEvent('admin-login');
                 adminAuthenticated = true;
                 csrfToken = result.csrfToken || '';
                 adminContent.classList.remove('hidden');
@@ -71,6 +72,7 @@
                 logoutBtn.addEventListener('click', handleAdminLogout);
                 adminContent.insertBefore(logoutBtn, adminContent.firstChild);
             } else {
+                window.skyrunApp.trackEvent('admin-login-fail');
                 alert(result.message || 'Login fehlgeschlagen.');
             }
         } catch (error) {

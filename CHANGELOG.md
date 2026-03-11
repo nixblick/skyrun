@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.3.1] - 2026-03-11
+
+### Hinzugefügt
+- **Event-Tracking via nixblick Analytics** — Wichtige Aktionen werden als virtuelle Pageviews getrackt: Anmeldung (`/evt/registration`), Warteliste (`/evt/registration-waitlist`), Admin-Login (`/evt/admin-login`), Login-Fehler (`/evt/admin-login-fail`). Kein Backend-Umbau nötig, Events erscheinen direkt im Analytics-Dashboard.
+
 ## [3.3.0] - 2026-03-09
 
 ### Geändert

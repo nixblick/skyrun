@@ -70,6 +70,7 @@
             const result = await response.json();
 
             if (result.success) {
+                window.skyrunApp.trackEvent(result.isWaitlisted ? 'registration-waitlist' : 'registration');
                 form.reset();
                 personCountInput.value = 1;
                 loadCaptcha(); // Neues CAPTCHA laden
