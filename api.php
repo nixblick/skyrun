@@ -2,10 +2,14 @@
 // config.php einbinden
 require_once 'config.php';
 
-// Session härten und starten
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 1);
-ini_set('session.cookie_samesite', 'Strict');
+// Session härten und starten (PHP 8.4 kompatibel)
+session_set_cookie_params([
+    'lifetime'  => 0,
+    'path'      => '/',
+    'secure'    => true,
+    'httponly'  => true,
+    'samesite'  => 'Strict'
+]);
 ini_set('session.use_strict_mode', 1);
 session_start();
 
@@ -58,6 +62,8 @@ if ($conn->connect_error) {
     exit;
 }
 $conn->set_charset("utf8mb4");
+// PHP 8.1+ wirft MySQLi-Exceptions standardmäßig — explizit deaktivieren
+mysqli_report(MYSQLI_REPORT_OFF);
 
 // === Hilfsfunktionen ===
 
