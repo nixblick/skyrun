@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#2c3e50"/>
+  <text x="16" y="14" font-family="Arial" font-size="9" font-weight="bold" fill="#3498db" text-anchor="middle">SKY</text>
+  <text x="16" y="25" font-family="Arial" font-size="9" font-weight="bold" fill="#e74c3c" text-anchor="middle">RUN</text>
+</svg>
