@@ -33,9 +33,10 @@ function sendMail($to, $subject, $message, $bcc = '') {
         $mail->SMTPAuth   = true;
         $mail->Username   = defined('MAIL_USERNAME') ? MAIL_USERNAME : $fromEmail;
         $mail->Password   = defined('MAIL_PASSWORD') ? MAIL_PASSWORD : '';
-        $mail->SMTPSecure = defined('MAIL_SECURE')   ? MAIL_SECURE   : PHPMailer::ENCRYPTION_SMTPS;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // 'ssl' für Port 465
         $mail->Port       = defined('MAIL_PORT')     ? MAIL_PORT     : 465;
         $mail->CharSet    = 'UTF-8';
+        $mail->SMTPDebug  = SMTP::DEBUG_SERVER; // Debug-Output ins Error-Log
 
         $mail->setFrom($fromEmail, $fromName);
         $mail->addAddress($to);
@@ -57,7 +58,7 @@ function sendMail($to, $subject, $message, $bcc = '') {
         return true;
 
     } catch (Exception $e) {
-        error_log("E-Mail konnte nicht gesendet werden an: " . substr($to, 0, 1) . "***@*** — " . $mail->ErrorInfo);
+        error_log("PHPMailer Fehler an " . substr($to, 0, 1) . "***@***: " . $mail->ErrorInfo);
         return false;
     }
 }
