@@ -436,70 +436,99 @@ switch ($action) {
             exit;
         }
 
-        $stmt = $conn->prepare("SELECT waitlisted, personCount FROM registrations WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $removed = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
+        $conn->begin_transaction();
+        $promoted = [];
 
-        if (!$removed) {
-            echo json_encode(['success' => false, 'message' => 'Teilnehmer nicht gefunden.']);
+        try {
+            $stmt = $conn->prepare("SELECT waitlisted, personCount FROM registrations WHERE id = ? FOR UPDATE");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $removed = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+
+            if (!$removed) {
+                $conn->rollback();
+                echo json_encode(['success' => false, 'message' => 'Teilnehmer nicht gefunden.']);
+                exit;
+            }
+
+            $stmt = $conn->prepare("DELETE FROM registrations WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $deleted = $stmt->execute();
+            $stmt->close();
+
+            if (!$deleted) {
+                $conn->rollback();
+                echo json_encode(['success' => false, 'message' => 'Fehler beim Entfernen.']);
+                exit;
+            }
+
+            if (!$removed['waitlisted']) {
+                // Aktuelle Teilnehmerzahl nach dem Löschen ermitteln (innerhalb der Transaction gesperrt)
+                $countStmt = $conn->prepare("SELECT COALESCE(SUM(personCount), 0) as total FROM registrations WHERE date = ? AND waitlisted = 0 FOR UPDATE");
+                $countStmt->bind_param("s", $date);
+                $countStmt->execute();
+                $currentParticipants = (int)$countStmt->get_result()->fetch_assoc()['total'];
+                $countStmt->close();
+
+                $maxParticipants = getMaxParticipants();
+                $availableSpots = $maxParticipants - $currentParticipants;
+
+                if ($availableSpots > 0) {
+                    $waitStmt = $conn->prepare("SELECT id, personCount FROM registrations WHERE date = ? AND waitlisted = 1 ORDER BY registrationTime ASC FOR UPDATE");
+                    $waitStmt->bind_param("s", $date);
+                    $waitStmt->execute();
+                    $waitlistResult = $waitStmt->get_result();
+
+                    while ($availableSpots > 0 && $waitlistEntry = $waitlistResult->fetch_assoc()) {
+                        if ($waitlistEntry['personCount'] <= $availableSpots) {
+                            $updateStmt = $conn->prepare("UPDATE registrations SET waitlisted = 0 WHERE id = ?");
+                            $updateStmt->bind_param("i", $waitlistEntry['id']);
+                            $updateStmt->execute();
+                            $updateStmt->close();
+                            $availableSpots -= $waitlistEntry['personCount'];
+                            $promoted[] = $waitlistEntry['id'];
+                        } else {
+                            break;
+                        }
+                    }
+                    $waitStmt->close();
+                }
+            }
+
+            $conn->commit();
+
+        } catch (Exception $e) {
+            $conn->rollback();
+            error_log("removeParticipant Transaction-Fehler: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Fehler beim Entfernen.']);
             exit;
         }
 
-        $stmt = $conn->prepare("DELETE FROM registrations WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $deleted = $stmt->execute();
-        $stmt->close();
+        // E-Mails außerhalb der Transaction senden
+        foreach ($promoted as $promotedId) {
+            if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
+                $detailsStmt = $conn->prepare("SELECT name, email, station, personCount, building FROM registrations WHERE id = ?");
+                $detailsStmt->bind_param("i", $promotedId);
+                $detailsStmt->execute();
+                $details = $detailsStmt->get_result()->fetch_assoc();
+                $detailsStmt->close();
 
-        if ($deleted && !$removed['waitlisted']) {
-            $maxParticipants = getMaxParticipants();
-            $currentParticipants = countParticipantsForDate($date);
-            $availableSpots = $maxParticipants - $currentParticipants;
+                if ($details) {
+                    $timeStmt = $conn->prepare("SELECT TIME_FORMAT(time, '%H:%i') as time FROM training_dates WHERE date = ?");
+                    $timeStmt->bind_param("s", $date);
+                    $timeStmt->execute();
+                    $timeRow = $timeStmt->get_result()->fetch_assoc();
+                    $timeStmt->close();
+                    $promoteTime = $timeRow['time'] ?? '19:00';
 
-            if ($availableSpots > 0) {
-                $stmt = $conn->prepare("SELECT id, personCount FROM registrations WHERE date = ? AND waitlisted = 1 ORDER BY registrationTime ASC");
-                $stmt->bind_param("s", $date);
-                $stmt->execute();
-                $waitlistResult = $stmt->get_result();
-
-                while ($availableSpots > 0 && $waitlistEntry = $waitlistResult->fetch_assoc()) {
-                    if ($waitlistEntry['personCount'] <= $availableSpots) {
-                        $updateStmt = $conn->prepare("UPDATE registrations SET waitlisted = 0 WHERE id = ?");
-                        $updateStmt->bind_param("i", $waitlistEntry['id']);
-                        $updateStmt->execute();
-                        $availableSpots -= $waitlistEntry['personCount'];
-                        $updateStmt->close();
-
-                        // Hochgestuften Teilnehmer per E-Mail benachrichtigen
-                        if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
-                            $detailsStmt = $conn->prepare("SELECT name, email, station, personCount, building FROM registrations WHERE id = ?");
-                            $detailsStmt->bind_param("i", $waitlistEntry['id']);
-                            $detailsStmt->execute();
-                            $details = $detailsStmt->get_result()->fetch_assoc();
-                            $detailsStmt->close();
-
-                            if ($details) {
-                                $timeStmt = $conn->prepare("SELECT TIME_FORMAT(time, '%H:%i') as time FROM training_dates WHERE date = ?");
-                                $timeStmt->bind_param("s", $date);
-                                $timeStmt->execute();
-                                $timeRow = $timeStmt->get_result()->fetch_assoc();
-                                $timeStmt->close();
-                                $promoteTime = $timeRow['time'] ?? '19:00';
-
-                                sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm', $promoteTime);
-                                error_log("Auto-Hochstufungs-E-Mail gesendet an: " . substr($details['email'], 0, 1) . "***@*** für Datum: $date");
-                            }
-                        }
-                    } else {
-                        break;
-                    }
+                    sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm', $promoteTime);
+                    error_log("Auto-Hochstufungs-E-Mail gesendet an: " . substr($details['email'], 0, 1) . "***@*** für Datum: $date");
                 }
-                $stmt->close();
             }
         }
 
-        echo json_encode(['success' => $deleted, 'message' => $deleted ? 'Teilnehmer entfernt.' : 'Fehler beim Entfernen.']);
+        echo json_encode(['success' => true, 'message' => 'Teilnehmer entfernt.']);
         break;
 
     case 'promoteFromWaitlist':
