@@ -996,4 +996,4 @@ switch ($action) {
 
 // Verbindung schließen
 $conn->close();
-?>
+
