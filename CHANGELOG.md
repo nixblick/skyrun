@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.3.5] - 2026-03-13
+
+### Gefixt
+- **Kritischer PHP 8.4 Fix: schließende `?>` Tags entfernt** — `config.php`, `mail-functions.php` und `api.php` hatten abschließende `?>` Tags. PHP gibt danach einen Newline aus, der in PHP 7 vom Output Buffer geschluckt wurde. In PHP 8.4 (kein Output Buffering default) landete dieser Newline vor dem JSON im HTTP-Response — `JSON.parse()` schlägt fehl → "Netzwerkfehler" im Admin-Bereich + CSRF-Token-Probleme.
+
 ## [3.3.4] - 2026-03-13
 
 ### Geändert

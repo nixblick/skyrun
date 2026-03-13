@@ -138,4 +138,4 @@ function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWai
 
     return sendMail($email, $subject, $message);
 }
-?>
+
