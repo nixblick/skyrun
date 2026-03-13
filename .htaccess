@@ -31,3 +31,6 @@ Options -Indexes
 RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Favicon: ICO-Anfragen auf SVG umleiten
+RedirectMatch 301 ^/favicon\.ico$ /favicon.svg
