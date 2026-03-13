@@ -149,12 +149,12 @@
                 }
                 window.skyrunApp.config.maxParticipants = result.maxParticipants;
                 document.getElementById('max-participants').value = window.skyrunApp.config.maxParticipants;
-                document.getElementById('max-registrations').textContent = window.skyrunApp.config.maxParticipants;
+                const maxRegEl = document.getElementById('max-registrations'); if (maxRegEl) maxRegEl.textContent = window.skyrunApp.config.maxParticipants;
             } else {
                 participantsListBody.innerHTML = `<tr><td colspan="6">Fehler: ${result.message}</td></tr>`;
             }
         } catch (error) {
-            participantsListBody.innerHTML = `<tr><td colspan="6">Fehler: ${error.message}</td></tr>`;
+            participantsListBody.innerHTML = '<tr><td colspan="6">Netzwerkfehler</td></tr>';
             console.error('Fehler:', error);
         }
     }
@@ -425,7 +425,7 @@
             if (result.success) {
                 alert('Einstellungen gespeichert.');
                 window.skyrunApp.config.maxParticipants = maxParticipants;
-                document.getElementById('max-registrations').textContent = maxParticipants;
+                const maxRegEl2 = document.getElementById('max-registrations'); if (maxRegEl2) maxRegEl2.textContent = maxParticipants;
                 window.skyrunApp.updateStatistics();
             } else {
                 alert('Fehler: ' + result.message);
