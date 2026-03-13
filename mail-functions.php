@@ -1,16 +1,8 @@
 <?php
 /**
  * mail-functions.php
- * E-Mail-Funktionen für Skyrun-Anmeldungen (via PHPMailer + SMTP)
+ * E-Mail-Funktionen für Skyrun-Anmeldungen
  */
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
-
-require_once __DIR__ . '/lib/phpmailer/Exception.php';
-require_once __DIR__ . '/lib/phpmailer/PHPMailer.php';
-require_once __DIR__ . '/lib/phpmailer/SMTP.php';
 
 function sendMail($to, $subject, $message, $bcc = '') {
     if (!defined('MAIL_ENABLED') || !MAIL_ENABLED) {
@@ -18,49 +10,32 @@ function sendMail($to, $subject, $message, $bcc = '') {
         return false;
     }
 
-    $fromEmail = defined('MAIL_FROM')      ? MAIL_FROM      : 'skyrun@mein-computerfreund.de';
-    $fromName  = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'Anmeldung Training Skyrun';
+    $fromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'Anmeldung Training Skyrun';
+    $fromEmail = defined('MAIL_FROM') ? MAIL_FROM : 'skyrun@mein-computerfreund.de';
+
+    $headers = [
+        'MIME-Version: 1.0',
+        'Content-type: text/html; charset=UTF-8',
+        'From: ' . $fromName . ' <' . $fromEmail . '>',
+        'Reply-To: ' . $fromEmail,
+        'X-Mailer: PHP/' . phpversion()
+    ];
 
     if (empty($bcc) && defined('MAIL_BCC') && !empty(MAIL_BCC)) {
         $bcc = MAIL_BCC;
     }
 
-    $mail = new PHPMailer(true);
-
-    try {
-        $mail->isSMTP();
-        $mail->Host       = defined('MAIL_HOST')     ? MAIL_HOST     : 'smtp.goneo.de';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = defined('MAIL_USERNAME') ? MAIL_USERNAME : $fromEmail;
-        $mail->Password   = defined('MAIL_PASSWORD') ? MAIL_PASSWORD : '';
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // 'ssl' für Port 465
-        $mail->Port       = defined('MAIL_PORT')     ? MAIL_PORT     : 465;
-        $mail->CharSet    = 'UTF-8';
-        $mail->SMTPDebug  = SMTP::DEBUG_SERVER; // Debug-Output ins Error-Log
-
-        $mail->setFrom($fromEmail, $fromName);
-        $mail->addAddress($to);
-
-        if (!empty($bcc)) {
-            foreach (explode(',', $bcc) as $bccAddr) {
-                $bccAddr = trim($bccAddr);
-                if (filter_var($bccAddr, FILTER_VALIDATE_EMAIL)) {
-                    $mail->addBCC($bccAddr);
-                }
-            }
-        }
-
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body    = $message;
-
-        $mail->send();
-        return true;
-
-    } catch (Exception $e) {
-        error_log("PHPMailer Fehler an " . substr($to, 0, 1) . "***@***: " . $mail->ErrorInfo);
-        return false;
+    if (!empty($bcc)) {
+        $headers[] = 'Bcc: ' . $bcc;
     }
+
+    $success = mail($to, $subject, $message, implode("\r\n", $headers), '-f ' . $fromEmail);
+
+    if (!$success) {
+        error_log("E-Mail konnte nicht gesendet werden an: " . substr($to, 0, 1) . "***@***");
+    }
+
+    return $success;
 }
 
 /**
@@ -116,9 +91,9 @@ function sendRegistrationConfirmation($email, $name, $date, $personCount, $isWai
         ? "Warteliste Skyrun Training – $buildingDisplayName – $germanWeekday, $formattedDate"
         : "Anmeldung zum Skyrun Training – $buildingDisplayName – $germanWeekday, $formattedDate";
 
-    $stationRow  = !empty($station) ? "<p>Wache: <strong>" . htmlspecialchars($station) . "</strong></p>" : "";
+    $stationRow = !empty($station) ? "<p>Wache: <strong>" . htmlspecialchars($station) . "</strong></p>" : "";
     $waitlistHint = $isWaitlisted
-        ? "<p>Sollte ein Platz frei werden, r&uuml;ckst du automatisch nach. Du bekommst dann eine separate Benachrichtigung per E-Mail.</p>"
+        ? "<p>Sollte ein Platz frei werden, r&uuml;ckst du automatisch nach. Wir informieren dich in diesem Fall nicht gesondert.</p>"
         : "";
 
     $message = "
