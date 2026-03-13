@@ -3,6 +3,12 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.3.3] - 2026-03-13
+
+### Geändert
+- **PHPMailer statt mail()** — E-Mail-Versand läuft jetzt über PHPMailer 6.9.3 via SMTP (smtp.goneo.de). Zuverlässiger, bessere Fehlerbehandlung, BCC-Adressen werden einzeln validiert. Lib unter `lib/phpmailer/`.
+- **Race Condition Warteliste gefixt** — `removeParticipant` läuft jetzt vollständig in einer MySQL-Transaction mit `FOR UPDATE`-Sperren. Verhindert, dass bei gleichzeitigen Löschungen derselbe Wartelisten-Eintrag doppelt hochgestuft wird. E-Mails werden nach dem Commit außerhalb der Transaction gesendet.
+
 ## [3.3.2] - 2026-03-13
 
 ### Geändert
