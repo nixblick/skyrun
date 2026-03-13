@@ -154,7 +154,7 @@
                 participantsListBody.innerHTML = `<tr><td colspan="6">Fehler: ${result.message}</td></tr>`;
             }
         } catch (error) {
-            participantsListBody.innerHTML = '<tr><td colspan="6">Netzwerkfehler</td></tr>';
+            participantsListBody.innerHTML = `<tr><td colspan="6">Fehler: ${error.message}</td></tr>`;
             console.error('Fehler:', error);
         }
     }
