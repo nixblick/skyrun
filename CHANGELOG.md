@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.3.2] - 2026-03-13
+
+### Geändert
+- **PHP 8 Kompatibilität** — `strftime()` und `setlocale()` in `api/utils.php` durch `IntlDateFormatter` ersetzt (beide Funktionen in PHP 8.1 entfernt)
+
 ## [3.3.1] - 2026-03-11
 
 ### Hinzugefügt

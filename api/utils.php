@@ -49,8 +49,15 @@ function validateDate($date) {
  * @return string Formatiertes Datum (z.B. "Donnerstag, 16.05.2025")
  */
 function formatDate($date) {
-    $timestamp = strtotime($date);
-    setlocale(LC_TIME, 'de_DE.utf8', 'de_DE', 'deu_deu');
-    return strftime('%A, %d.%m.%Y', $timestamp);
+    $dateObj = new DateTime($date);
+    $formatter = new IntlDateFormatter(
+        'de_DE',
+        IntlDateFormatter::FULL,
+        IntlDateFormatter::NONE,
+        'Europe/Berlin',
+        IntlDateFormatter::GREGORIAN,
+        'EEEE, dd.MM.yyyy'
+    );
+    return $formatter->format($dateObj);
 }
 ?>
