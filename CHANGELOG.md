@@ -3,6 +3,12 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.3.4] - 2026-03-13
+
+### Geändert
+- **PHP 8.4 Session-Fix** — `ini_set()` für Session-Cookie-Parameter durch `session_set_cookie_params()` ersetzt. Behebt Session-Verlust und CSRF-Token-Fehler unter PHP 8.4.
+- **MySQLi Exception-Modus deaktiviert** — `mysqli_report(MYSQLI_REPORT_OFF)` explizit gesetzt. PHP 8.1+ aktiviert Exceptions standardmäßig, was zu unbehandelten 500-Fehlern führte (u.a. "Netzwerkfehler" im Admin-Bereich).
+
 ## [3.3.3] - 2026-03-13
 
 ### Geändert
