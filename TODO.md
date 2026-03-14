@@ -24,9 +24,9 @@
   3. **Migration**: bestehende `registrations` WHERE `waitlisted = 0` einmalig in `participation_log` überführen (SQL-Script).
   4. **Gipfelbuch-Query** auf `participation_log` umstellen — zwei Spalten anzeigen: `COUNT(DISTINCT date)` (Termine) + `SUM(person_count)` (Personen gesamt). Tabelle zeigt dann z.B. "12 - FF Bergen | 7 Termine | 23 Personen".
   5. **Cleanup-Action** `cleanupOldRegistrations` in `api.php` + GitHub Action (wöchentlich): `DELETE FROM registrations WHERE date < DATE_SUB(NOW(), INTERVAL 4 WEEK)`.
-  6. **Datenschutz.html** aktualisieren — zwei Punkte:
-     - Abschnitt 4 (Speicherdauer) ergänzen: Anmeldedaten werden nach 4 Wochen gelöscht. Für das Gipfelbuch werden jedoch anonymisierte Teilnahmedaten (Wache, Datum, Gebäude, Personenanzahl — kein Name, keine E-Mail) unbefristet gespeichert.
-     - Abschnitt 2 (Datenerhebung) neue Untersektion 2.4: erläutern, dass bei bestätigter Anmeldung diese anonymisierten Daten in ein Gipfelbuch-Log übertragen werden, Rechtsgrundlage Art. 6 Abs. 1 lit. f (berechtigtes Interesse an der Veranstaltungsstatistik).
+  6. **Datenschutz.html aktualisieren** — erst nach Schritt 1–5, solange Gipfelbuch noch aus `registrations` liest ist die aktuelle Datenschutzerklärung noch korrekt. Dann zwei Stellen anpassen:
+     - **Abschnitt 2, neue Untersektion 2.4 "Gipfelbuch-Log"**: Bei bestätigter Anmeldung (nicht Warteliste) werden anonymisierte Teilnahmedaten gespeichert: Wache, Datum, Gebäude, Personenanzahl — kein Name, keine E-Mail, kein Telefon. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an Veranstaltungsstatistik).
+     - **Abschnitt 4 (Speicherdauer)**: Anmeldedaten (mit Personenbezug) werden 4 Wochen nach dem Termin gelöscht. Die anonymisierten Gipfelbuch-Einträge (`participation_log`) werden nicht gelöscht — sie enthalten keine personenbezogenen Daten.
 - [ ] **shared/policies Templates befüllen** — datenschutz.html + impressum.html als Vorlagen in `~/GitHub/nixblick/shared/policies/` ablegen (mit `{{PLATZHALTER}}`-Syntax laut README).
 - [ ] **Sticky Header** — Header wird beim Scrollen kompakter (kleinere Schrift, weniger Padding). Verbessert Mobile-UX.
 - [ ] **Favicon** — SVG-Favicon (Flammen/Treppen-Icon) für Browser-Tab und Homescreen-Bookmark.
