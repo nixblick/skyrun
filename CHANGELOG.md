@@ -3,6 +3,13 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.3.6] - 2026-03-14
+
+### Hinzugefügt
+- **Datenschutzerklärung** (`datenschutz.html`) — DSGVO-konforme Datenschutzerklärung nach kritischer Review: korrekte Rechtsgrundlage (lit. a, Einwilligung), E-Mail-Versand und BCC dokumentiert, IP-Anonymisierung korrekt differenziert, Analytics-Drittdomain erwähnt, ehrliche Speicherdauer, Widerrufsrecht prominent, Jugendfeuerwehr-Hinweis, § 25 TTDSG für Session-Cookie
+- **Impressum** (`impressum.html`) — § 5 TMG, dezent verlinkt im Footer neben Admin-Bereich
+- **Footer-Links** in `index.html` — Datenschutz + Impressum
+
 ## [3.3.5] - 2026-03-13
 
 ### Gefixt
