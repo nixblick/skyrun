@@ -22,7 +22,7 @@
   1. **Neue DB-Tabelle `participation_log`** anlegen: `station`, `date`, `building`, `person_count` — keine personenbezogenen Daten.
   2. **Schreibpunkte** in `api.php` ergänzen: bei `register` (nicht waitlisted) + bei `promoteFromWaitlist` → INSERT in `participation_log`. Bei `removeParticipant` → DELETE aus `participation_log`.
   3. **Migration**: bestehende `registrations` WHERE `waitlisted = 0` einmalig in `participation_log` überführen (SQL-Script).
-  4. **Gipfelbuch-Query** auf `participation_log` umstellen.
+  4. **Gipfelbuch-Query** auf `participation_log` umstellen — zwei Spalten anzeigen: `COUNT(DISTINCT date)` (Termine) + `SUM(person_count)` (Personen gesamt). Tabelle zeigt dann z.B. "12 - FF Bergen | 7 Termine | 23 Personen".
   5. **Cleanup-Action** `cleanupOldRegistrations` in `api.php` + GitHub Action (wöchentlich): `DELETE FROM registrations WHERE date < DATE_SUB(NOW(), INTERVAL 4 WEEK)`.
   6. **Datenschutz.html** aktualisieren: Gipfelbuch-Speicherung (anonym, unbefristet) dokumentieren.
 - [ ] **shared/policies Templates befüllen** — datenschutz.html + impressum.html als Vorlagen in `~/GitHub/nixblick/shared/policies/` ablegen (mit `{{PLATZHALTER}}`-Syntax laut README).
