@@ -74,7 +74,7 @@ function generateCsrfToken() {
 }
 
 function validateCsrfToken() {
-    $token = $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '';
+    $token = $_POST['csrf_token'] ?? '';
     return !empty($token) && isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
@@ -551,57 +551,78 @@ switch ($action) {
             exit;
         }
 
-        $stmt = $conn->prepare("SELECT personCount FROM registrations WHERE id = ? AND waitlisted = 1");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $promoteInfo = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
+        $conn->begin_transaction();
+        $details = null;
 
-        if (!$promoteInfo) {
-            echo json_encode(['success' => false, 'message' => 'Nicht auf Warteliste.']);
-            exit;
-        }
+        try {
+            $stmt = $conn->prepare("SELECT personCount FROM registrations WHERE id = ? AND waitlisted = 1 FOR UPDATE");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $promoteInfo = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
 
-        $personCountToPromote = $promoteInfo['personCount'];
-        $maxParticipants = getMaxParticipants();
-        $currentParticipants = countParticipantsForDate($date);
+            if (!$promoteInfo) {
+                $conn->rollback();
+                echo json_encode(['success' => false, 'message' => 'Nicht auf Warteliste.']);
+                exit;
+            }
 
-        if (($currentParticipants + $personCountToPromote) <= $maxParticipants) {
+            $personCountToPromote = $promoteInfo['personCount'];
+            $maxParticipants = getMaxParticipants();
+
+            $countStmt = $conn->prepare("SELECT COALESCE(SUM(personCount), 0) as total FROM registrations WHERE date = ? AND waitlisted = 0 FOR UPDATE");
+            $countStmt->bind_param("s", $date);
+            $countStmt->execute();
+            $currentParticipants = (int)$countStmt->get_result()->fetch_assoc()['total'];
+            $countStmt->close();
+
+            if (($currentParticipants + $personCountToPromote) > $maxParticipants) {
+                $conn->rollback();
+                echo json_encode(['success' => false, 'message' => 'Nicht genug Plätze.']);
+                exit;
+            }
+
             $stmt = $conn->prepare("UPDATE registrations SET waitlisted = 0 WHERE id = ?");
             $stmt->bind_param("i", $id);
             $success = $stmt->execute();
             $stmt->close();
-            
-            if ($success) {
-                // Teilnehmer über Hochstufung informieren
-                if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
-                    // Zuerst Details des Teilnehmers abrufen
-                    $detailsStmt = $conn->prepare("SELECT name, email, station, personCount, building FROM registrations WHERE id = ?");
-                    $detailsStmt->bind_param("i", $id);
-                    $detailsStmt->execute();
-                    $details = $detailsStmt->get_result()->fetch_assoc();
-                    $detailsStmt->close();
 
-                    if ($details) {
-                        $timeStmt = $conn->prepare("SELECT TIME_FORMAT(time, '%H:%i') as time FROM training_dates WHERE date = ?");
-                        $timeStmt->bind_param("s", $date);
-                        $timeStmt->execute();
-                        $timeRow = $timeStmt->get_result()->fetch_assoc();
-                        $timeStmt->close();
-                        $promoteTime = $timeRow['time'] ?? '19:00';
-
-                        sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm', $promoteTime);
-                        error_log("Hochstufungs-E-Mail gesendet an: " . substr($details['email'], 0, 1) . "***@*** für Datum: $date");
-                    }
-                }
-                
-                echo json_encode(['success' => $success, 'message' => 'Hochgestuft.']);
-            } else {
+            if (!$success) {
+                $conn->rollback();
                 echo json_encode(['success' => false, 'message' => 'Fehler beim Hochstufen.']);
+                exit;
             }
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Nicht genug Plätze.']);
+
+            // Details für E-Mail vor Commit lesen
+            $detailsStmt = $conn->prepare("SELECT name, email, station, personCount, building FROM registrations WHERE id = ?");
+            $detailsStmt->bind_param("i", $id);
+            $detailsStmt->execute();
+            $details = $detailsStmt->get_result()->fetch_assoc();
+            $detailsStmt->close();
+
+            $conn->commit();
+
+        } catch (Exception $e) {
+            $conn->rollback();
+            error_log("promoteFromWaitlist Transaction-Fehler: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Fehler beim Hochstufen.']);
+            exit;
         }
+
+        // E-Mail außerhalb der Transaction senden
+        if ($details && defined('MAIL_ENABLED') && MAIL_ENABLED) {
+            $timeStmt = $conn->prepare("SELECT TIME_FORMAT(time, '%H:%i') as time FROM training_dates WHERE date = ?");
+            $timeStmt->bind_param("s", $date);
+            $timeStmt->execute();
+            $timeRow = $timeStmt->get_result()->fetch_assoc();
+            $timeStmt->close();
+            $promoteTime = $timeRow['time'] ?? '19:00';
+
+            sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm', $promoteTime);
+            error_log("Hochstufungs-E-Mail gesendet an: " . substr($details['email'], 0, 1) . "***@*** für Datum: $date");
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Hochgestuft.']);
         break;
 
     case 'exportData':
@@ -983,7 +1004,7 @@ switch ($action) {
             }
 
             $size = filesize($backupFile);
-            echo json_encode(['success' => true, 'message' => "Backup erstellt: " . basename($backupFile) . " ($size Bytes)", 'path' => $backupDir]);
+            echo json_encode(['success' => true, 'message' => "Backup erstellt: " . basename($backupFile) . " ($size Bytes)"]);
         } catch (Exception $e) {
             error_log("Backup-Fehler: " . $e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Backup fehlgeschlagen.']);

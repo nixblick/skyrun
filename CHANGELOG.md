@@ -3,6 +3,14 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.3.7] - 2026-03-14
+
+### Gefixt
+- **CSRF-Token via GET entfernt** (`api.php`) — Token wurde bisher auch aus `$_GET` akzeptiert, was ihn in Server-Logs, Browser-History und Referrer-Headern exponieren kann. Jetzt ausschließlich via POST.
+- **Serverpfad aus Backup-Response entfernt** (`api.php`) — `createBackup` lieferte den absoluten Pfad mit zurück, unnötige Informationsoffenbarung.
+- **`promoteFromWaitlist` mit Transaction abgesichert** (`api.php`) — Race Condition geschlossen: Kapazitätsprüfung und UPDATE laufen jetzt in einer Transaction mit `FOR UPDATE`-Sperren, konsistent mit `removeParticipant`. E-Mail-Versand nach Commit außerhalb der Transaction.
+- **Analytics Cache-Busting** (`index.html`) — `?v=3` ergänzt, konsistent mit anderen nixblick-Projekten.
+
 ## [3.3.6] - 2026-03-14
 
 ### Hinzugefügt
