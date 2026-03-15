@@ -7,7 +7,7 @@
 
 ## KRITISCH
 
-- [ ] **PHPMailer via SMTP testen und aktivieren** — PHPMailer (lib/phpmailer/) ist bereits im Repo, SMTP-Config in config.php ist fertig (smtp.goneo.de:465/ssl). mail-functions.php wurde zurückgesetzt auf mail() weil SMTP-Login nicht funktioniert hat. Für Debuggen: `SMTPDebug = SMTP::DEBUG_SERVER` aktivieren und Fehlerlog auf dem Server prüfen (SSH oder Hosting-Panel). Goneo evtl. anderen SMTP-Port testen (587/STARTTLS).
+- [x] **PHPMailer via SMTP aktiviert** (v3.3.8) — smtp.goneo.de:587/STARTTLS. Falls erneut Bounces kommen: `SMTPDebug = SMTP::DEBUG_SERVER` aktivieren + php_errors.log prüfen.
 
 - [ ] **Passwörter rotieren** — Bei Goneo ändern: DB-Passwort, SMTP-Passwort (`skyrun@mein-computerfreund.de`), dann `./rotate_credentials.sh` ausführen.
 - [ ] **`create_backup.php` auf Server löschen** — Alte Datei mit hardcoded Token. Wird nicht mehr genutzt, per .htaccess blockiert aber sollte weg.

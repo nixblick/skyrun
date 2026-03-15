@@ -1,17 +1,25 @@
 <?php
 /**
  * /api/mail.php
- * Version: 1.0.0
- * Email functionality
+ * Version: 1.1.0
+ * Email functionality via PHPMailer + SMTP (smtp.goneo.de:587/STARTTLS)
  */
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception as MailerException;
+
+require_once __DIR__ . '/../lib/phpmailer/Exception.php';
+require_once __DIR__ . '/../lib/phpmailer/PHPMailer.php';
+require_once __DIR__ . '/../lib/phpmailer/SMTP.php';
+
 /**
- * Sendet eine E-Mail mit der PHP mail() Funktion
- * 
- * @param string $to Empfänger-E-Mail
+ * Sendet eine E-Mail via PHPMailer + SMTP (Goneo)
+ *
+ * @param string $to      Empfänger-E-Mail
  * @param string $subject Betreff
  * @param string $message Inhalt (HTML)
- * @param string $bcc BCC-Empfänger (optional)
+ * @param string $bcc     BCC-Empfänger (optional, kommagetrennt)
  * @return bool Erfolg
  */
 function sendMail($to, $subject, $message, $bcc = '') {
@@ -20,35 +28,49 @@ function sendMail($to, $subject, $message, $bcc = '') {
         return false;
     }
 
-    // Header aufbauen
-    $fromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'Anmeldung Training Skyrun';
-    $fromEmail = defined('MAIL_FROM') ? MAIL_FROM : 'skyrun@mein-computerfreund.de';
-    
-    $headers = [
-        'MIME-Version: 1.0',
-        'Content-type: text/html; charset=UTF-8',
-        'From: ' . $fromName . ' <' . $fromEmail . '>',
-        'Reply-To: ' . $fromEmail,
-        'X-Mailer: PHP/' . phpversion()
-    ];
-    
-    // BCC hinzufügen falls konfiguriert und nicht bereits als Parameter übergeben
+    $fromEmail = defined('MAIL_FROM')      ? MAIL_FROM      : 'skyrun@mein-computerfreund.de';
+    $fromName  = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'Anmeldung Training Skyrun';
+
     if (empty($bcc) && defined('MAIL_BCC') && !empty(MAIL_BCC)) {
         $bcc = MAIL_BCC;
     }
-    
-    if (!empty($bcc)) {
-        $headers[] = 'Bcc: ' . $bcc;
-    }
 
-    // Mail senden
-    $success = mail($to, $subject, $message, implode("\r\n", $headers));
-    
-    if (!$success) {
-        error_log("E-Mail konnte nicht gesendet werden an: $to");
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = defined('MAIL_HOST')     ? MAIL_HOST     : 'smtp.goneo.de';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = defined('MAIL_USERNAME') ? MAIL_USERNAME : $fromEmail;
+        $mail->Password   = defined('MAIL_PASSWORD') ? MAIL_PASSWORD : '';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+        $mail->CharSet    = 'UTF-8';
+        $mail->SMTPDebug  = SMTP::DEBUG_OFF;
+
+        $mail->setFrom($fromEmail, $fromName);
+        $mail->addAddress($to);
+
+        if (!empty($bcc)) {
+            foreach (explode(',', $bcc) as $bccAddr) {
+                $bccAddr = trim($bccAddr);
+                if ($bccAddr && filter_var($bccAddr, FILTER_VALIDATE_EMAIL)) {
+                    $mail->addBCC($bccAddr);
+                }
+            }
+        }
+
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = $message;
+        $mail->AltBody = strip_tags($message);
+
+        $mail->send();
+        return true;
+
+    } catch (MailerException $e) {
+        error_log("PHPMailer SMTP fehlgeschlagen an " . substr($to, 0, 1) . "***@***: " . $mail->ErrorInfo);
+        return false;
     }
-    
-    return $success;
 }
 
 /**

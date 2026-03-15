@@ -1,8 +1,16 @@
 <?php
 /**
  * mail-functions.php
- * E-Mail-Funktionen für Skyrun-Anmeldungen
+ * E-Mail-Funktionen für Skyrun-Anmeldungen (via PHPMailer + SMTP)
  */
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception as MailerException;
+
+require_once __DIR__ . '/lib/phpmailer/Exception.php';
+require_once __DIR__ . '/lib/phpmailer/PHPMailer.php';
+require_once __DIR__ . '/lib/phpmailer/SMTP.php';
 
 function sendMail($to, $subject, $message, $bcc = '') {
     if (!defined('MAIL_ENABLED') || !MAIL_ENABLED) {
@@ -10,32 +18,49 @@ function sendMail($to, $subject, $message, $bcc = '') {
         return false;
     }
 
-    $fromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'Anmeldung Training Skyrun';
-    $fromEmail = defined('MAIL_FROM') ? MAIL_FROM : 'skyrun@mein-computerfreund.de';
-
-    $headers = [
-        'MIME-Version: 1.0',
-        'Content-type: text/html; charset=UTF-8',
-        'From: ' . $fromName . ' <' . $fromEmail . '>',
-        'Reply-To: ' . $fromEmail,
-        'X-Mailer: PHP/' . phpversion()
-    ];
+    $fromEmail = defined('MAIL_FROM')      ? MAIL_FROM      : 'skyrun@mein-computerfreund.de';
+    $fromName  = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'Anmeldung Training Skyrun';
 
     if (empty($bcc) && defined('MAIL_BCC') && !empty(MAIL_BCC)) {
         $bcc = MAIL_BCC;
     }
 
-    if (!empty($bcc)) {
-        $headers[] = 'Bcc: ' . $bcc;
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = defined('MAIL_HOST')     ? MAIL_HOST     : 'smtp.goneo.de';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = defined('MAIL_USERNAME') ? MAIL_USERNAME : $fromEmail;
+        $mail->Password   = defined('MAIL_PASSWORD') ? MAIL_PASSWORD : '';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;  // STARTTLS Port 587
+        $mail->Port       = 587;
+        $mail->CharSet    = 'UTF-8';
+        $mail->SMTPDebug  = SMTP::DEBUG_OFF;
+
+        $mail->setFrom($fromEmail, $fromName);
+        $mail->addAddress($to);
+
+        if (!empty($bcc)) {
+            foreach (explode(',', $bcc) as $bccAddr) {
+                $bccAddr = trim($bccAddr);
+                if ($bccAddr && filter_var($bccAddr, FILTER_VALIDATE_EMAIL)) {
+                    $mail->addBCC($bccAddr);
+                }
+            }
+        }
+
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = $message;
+        $mail->AltBody = strip_tags($message);
+
+        $mail->send();
+        return true;
+
+    } catch (MailerException $e) {
+        error_log("PHPMailer SMTP fehlgeschlagen an " . substr($to, 0, 1) . "***@***: " . $mail->ErrorInfo);
+        return false;
     }
-
-    $success = mail($to, $subject, $message, implode("\r\n", $headers), '-f ' . $fromEmail);
-
-    if (!$success) {
-        error_log("E-Mail konnte nicht gesendet werden an: " . substr($to, 0, 1) . "***@***");
-    }
-
-    return $success;
 }
 
 /**

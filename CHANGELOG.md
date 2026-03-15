@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.3.8] - 2026-03-15
+
+### Gefixt
+- **PHPMailer SMTP reaktiviert** (`mail-functions.php`, `api/mail.php`) — Mails werden jetzt via smtp.goneo.de:587 (STARTTLS) mit Auth versendet statt via PHP `mail()`. Behebt Bounces von GMX/IONOS/1und1 wegen fehlender SPF-Autorisierung des Servers.
+
 ## [3.3.7] - 2026-03-14
 
 ### Gefixt
