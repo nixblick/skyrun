@@ -3,6 +3,12 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.5.1] - 2026-03-19
+
+### Hinzugefügt
+- **Datenschutzerklärung: Admin-Log dokumentiert** (`datenschutz.html`) — Neuer Abschnitt 8 beschreibt das Admin-Aktivitätsprotokoll: was geloggt wird, dass keine Besucherdaten betroffen sind, Rechtsgrundlage Art. 6 Abs. 1 lit. f DSGVO.
+- **GitHub-Link im Footer** (`index.html`) — Link auf https://github.com/nixblick
+
 ## [3.5.0] - 2026-03-19
 
 ### Hinzugefügt

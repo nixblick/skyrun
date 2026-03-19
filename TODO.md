@@ -14,11 +14,7 @@
 ## Bugs / Funktionale Fehler
 
 - [ ] **Datenschutz Abschnitt 2.3 bedingt korrekt** — "wird automatisch eine Bestätigungs-E-Mail gesendet" gilt nur wenn `MAIL_ENABLED=true` und "BCC geht an Organisator" nur wenn `MAIL_BCC` gesetzt ist. Formulierung ggf. anpassen wenn MAIL dauerhaft aktiv ist.
-- [ ] **Datenschutzerklärung prüfen nach v3.4.0-Änderungen** — Folgende Änderungen vom 19.03.2026 könnten Aktualisierung erfordern:
-  - **Smoke-Test** schreibt/löscht temporär Testdaten in `training_dates` (keine personenbezogenen Daten, aber Verarbeitungsvorgang)
-  - **Session-Status-Endpoint** (`sessionStatus`) — neuer API-Endpunkt, prüft nur Auth-Status, verarbeitet keine neuen Daten
-  - **Auto-Migration** ändert DB-Schema (UNIQUE-Constraint) — keine neuen Datenfelder, kein Datenschutz-Einfluss
-  - Prüfen ob die technischen Maßnahmen (Session-Timer, Warnbanner) unter "Technische Maßnahmen" in der Datenschutzerklärung erwähnt werden sollten
+- [x] **Datenschutzerklärung aktualisiert** (v3.5.1) — Admin-Log als neuer Abschnitt 8 dokumentiert. Smoke-Test, Session-Status und Auto-Migration erfordern keinen eigenen Datenschutz-Abschnitt (keine personenbezogenen Daten).
 
 ## Verbesserungen
 
