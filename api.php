@@ -73,6 +73,20 @@ if ($indexCheck && $indexCheck->num_rows > 0) {
     error_log("Migration: unique_date → unique_date_building ausgeführt");
 }
 
+// admin_log Tabelle erstellen (einmalig)
+$logTableCheck = $conn->query("SHOW TABLES LIKE 'admin_log'");
+if ($logTableCheck && $logTableCheck->num_rows === 0) {
+    $conn->query("CREATE TABLE admin_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        level ENUM('info','warn','error') NOT NULL DEFAULT 'info',
+        action VARCHAR(50) NOT NULL,
+        message TEXT NOT NULL,
+        details TEXT DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    error_log("Migration: admin_log Tabelle erstellt");
+}
+
 // === Hilfsfunktionen ===
 
 function generateCsrfToken() {
@@ -88,10 +102,22 @@ function validateCsrfToken() {
 
 function requireCsrf() {
     if (!validateCsrfToken()) {
+        $action = $_POST['action'] ?? 'unbekannt';
+        adminLog('error', 'csrfFailed', "CSRF-Validierung fehlgeschlagen bei Aktion: $action", "Session-Token vorhanden: " . (isset($_SESSION['csrf_token']) ? 'ja' : 'nein'));
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Ungültiger CSRF-Token.']);
         exit;
     }
+}
+
+function adminLog($level, $action, $message, $details = null) {
+    global $conn;
+    $stmt = $conn->prepare("INSERT INTO admin_log (level, action, message, details) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $level, $action, $message, $details);
+    $stmt->execute();
+    $stmt->close();
+    // Alte Einträge aufräumen (max 500 behalten)
+    $conn->query("DELETE FROM admin_log WHERE id NOT IN (SELECT id FROM (SELECT id FROM admin_log ORDER BY created_at DESC LIMIT 500) t)");
 }
 
 function getMaxParticipants() {
@@ -146,8 +172,11 @@ function isAdminAuthenticated() {
     // Session-Timeout: 30 Minuten Inaktivität
     $timeout = 30 * 60;
     if (isset($_SESSION['admin_last_activity']) && (time() - $_SESSION['admin_last_activity']) > $timeout) {
+        $inactiveMin = round((time() - $_SESSION['admin_last_activity']) / 60);
+        $user = $_SESSION['admin_username'] ?? 'unbekannt';
         // Session abgelaufen — aufräumen
         unset($_SESSION['admin_authenticated'], $_SESSION['admin_username'], $_SESSION['admin_last_activity'], $_SESSION['csrf_token']);
+        adminLog('warn', 'sessionExpired', "Session abgelaufen nach {$inactiveMin} Min Inaktivität", "User: $user");
         return false;
     }
 
@@ -383,6 +412,7 @@ switch ($action) {
             $_SESSION['admin_username'] = $username;
             $_SESSION['admin_last_activity'] = time();
             $csrfToken = generateCsrfToken();
+            adminLog('info', 'adminLogin', "Login erfolgreich: $username");
             echo json_encode(['success' => true, 'csrfToken' => $csrfToken]);
         } else {
             $attempts['count']++;
@@ -891,12 +921,17 @@ switch ($action) {
         $stmt->bind_param("sss", $date, $time, $building);
 
         if ($stmt->execute()) {
+            adminLog('info', 'addTrainingDate', "Termin hinzugefügt: $date $time $building", "ID: " . $stmt->insert_id);
             echo json_encode(['success' => true, 'message' => 'Termin hinzugefügt.', 'id' => $stmt->insert_id]);
         } else {
-            if ($conn->errno == 1062) {
+            $errno = $conn->errno;
+            $error = $conn->error;
+            if ($errno == 1062) {
+                adminLog('warn', 'addTrainingDate', "Duplikat: $date $building", "MySQL $errno: $error");
                 echo json_encode(['success' => false, 'message' => 'Dieser Termin (Datum + Gebäude) existiert bereits.']);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Fehler beim Hinzufügen.']);
+                adminLog('error', 'addTrainingDate', "INSERT fehlgeschlagen: $date $time $building", "MySQL $errno: $error");
+                echo json_encode(['success' => false, 'message' => "Fehler beim Hinzufügen (DB-$errno)."]);
             }
         }
         $stmt->close();
@@ -952,12 +987,47 @@ switch ($action) {
             exit;
         }
 
+        // Termin-Details vor Löschung lesen
+        $infoStmt = $conn->prepare("SELECT date, building FROM training_dates WHERE id = ?");
+        $infoStmt->bind_param("i", $id);
+        $infoStmt->execute();
+        $info = $infoStmt->get_result()->fetch_assoc();
+        $infoStmt->close();
+
         $stmt = $conn->prepare("DELETE FROM training_dates WHERE id = ?");
         $stmt->bind_param("i", $id);
         $success = $stmt->execute();
         $stmt->close();
+        if ($success && $info) {
+            adminLog('info', 'deleteTrainingDate', "Termin gelöscht: {$info['date']} {$info['building']}", "ID: $id");
+        }
 
         echo json_encode(['success' => $success, 'message' => $success ? 'Termin gelöscht.' : 'Fehler beim Löschen.']);
+        break;
+
+    case 'getAdminLog':
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
+        }
+        $limit = min(100, max(10, (int)($_GET['limit'] ?? 50)));
+        $levelFilter = $_GET['level'] ?? '';
+        if ($levelFilter && in_array($levelFilter, ['info', 'warn', 'error'])) {
+            $stmt = $conn->prepare("SELECT id, created_at, level, action, message, details FROM admin_log WHERE level = ? ORDER BY created_at DESC LIMIT ?");
+            $stmt->bind_param("si", $levelFilter, $limit);
+        } else {
+            $stmt = $conn->prepare("SELECT id, created_at, level, action, message, details FROM admin_log ORDER BY created_at DESC LIMIT ?");
+            $stmt->bind_param("i", $limit);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $logs = [];
+        while ($row = $result->fetch_assoc()) {
+            $logs[] = $row;
+        }
+        $stmt->close();
+        echo json_encode(['success' => true, 'logs' => $logs]);
         break;
 
     case 'sessionStatus':
@@ -1053,7 +1123,7 @@ switch ($action) {
             }
 
             $backupFile = $backupDir . 'skyrun_backup_' . date('Y-m-d_H-i-s') . '.sql';
-            $tables = ['registrations', 'users', 'config', 'stations', 'training_dates'];
+            $tables = ['registrations', 'users', 'config', 'stations', 'training_dates', 'admin_log'];
 
             $output = "-- Skyrun Backup\n-- Date: " . date('Y-m-d H:i:s') . "\n\n";
 

@@ -181,6 +181,7 @@
                         <button class="tab-btn" data-tab="dates">Termine</button>
                         <button class="tab-btn" data-tab="export">Exportieren</button>
                         <button class="tab-btn" data-tab="peakbook">Gipfelbuch</button>
+                        <button class="tab-btn" data-tab="adminlog">Log</button>
                         <button class="tab-btn" data-tab="settings">Einstellungen</button>
                     </div>
                     
@@ -286,6 +287,31 @@
                         </table>
                     </div>
                     
+                    <div id="adminlog-tab" class="tab-content">
+                        <h3>Admin-Log</h3>
+                        <div class="form-group" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <select id="log-level-filter">
+                                <option value="">Alle Level</option>
+                                <option value="error">Fehler</option>
+                                <option value="warn">Warnungen</option>
+                                <option value="info">Info</option>
+                            </select>
+                            <button id="refresh-log-btn">Aktualisieren</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Zeitpunkt</th>
+                                    <th>Level</th>
+                                    <th>Aktion</th>
+                                    <th>Nachricht</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-log-list"></tbody>
+                        </table>
+                    </div>
+
                     <div id="settings-tab" class="tab-content">
                         <h3>Einstellungen</h3>
                         <form id="settings-form">
@@ -323,7 +349,7 @@
 
         <footer>
             <a href="#" id="show-admin">Admin-Bereich</a>
-            <p class="footer-credit">v3.3 &middot; <a href="https://www.andrehinz.de" target="_blank" rel="noopener">Andr&eacute; Hinz</a> &middot; <a href="/datenschutz.html">Datenschutz</a> &middot; <a href="/impressum.html">Impressum</a> <button class="theme-toggle" id="theme-toggle" title="Theme wechseln">&#9790;</button></p>
+            <p class="footer-credit">v3.5 &middot; <a href="https://www.andrehinz.de" target="_blank" rel="noopener">Andr&eacute; Hinz</a> &middot; <a href="/datenschutz.html">Datenschutz</a> &middot; <a href="/impressum.html">Impressum</a> <button class="theme-toggle" id="theme-toggle" title="Theme wechseln">&#9790;</button></p>
         </footer>
     </div>
 

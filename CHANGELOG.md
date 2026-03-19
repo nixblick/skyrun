@@ -3,6 +3,12 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.5.0] - 2026-03-19
+
+### Hinzugefügt
+- **Admin-Log** (`api.php`, `js/admin.js`, `index.html`) — Neuer Tab "Log" im Admin-Panel. Loggt Login, Logout, Session-Ablauf, CSRF-Fehler, Termin-Erstellung/-Löschung und DB-Fehler mit Level (Info/Warnung/Fehler), Zeitstempel und Details. Filterbar nach Level. Max 500 Einträge, auto-cleanup. DB-Tabelle `admin_log` wird per Auto-Migration erstellt.
+- **DB-Fehlercode in Fehlermeldung** — Bei fehlgeschlagenem INSERT wird jetzt der MySQL-Fehlercode angezeigt (z.B. "Fehler beim Hinzufügen (DB-1205)") statt generischer Meldung. Hilft bei Diagnose von Table-Locks durch Hoster-Backups.
+
 ## [3.4.0] - 2026-03-19
 
 ### Hinzugefügt

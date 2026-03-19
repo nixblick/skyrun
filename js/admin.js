@@ -1,6 +1,6 @@
 /**
  * /js/admin.js
- * Version: 1.3.0
+ * Version: 1.4.0
  * Admin-related functionality
  */
 
@@ -172,6 +172,7 @@
             else if (tabName === 'waitlist') updateWaitlistTable();
             else if (tabName === 'dates') loadTrainingDates();
             else if (tabName === 'peakbook') updatePeakBook();
+            else if (tabName === 'adminlog') loadAdminLog();
         }
     }
     
@@ -655,6 +656,46 @@
         }
     }
     
+    // Admin-Log laden
+    async function loadAdminLog() {
+        if (!adminAuthenticated) return;
+        const logList = document.getElementById('admin-log-list');
+        if (!logList) return;
+        logList.innerHTML = '<tr><td colspan="5">Lade Log...</td></tr>';
+
+        const levelFilter = document.getElementById('log-level-filter');
+        const level = levelFilter ? levelFilter.value : '';
+        let url = `${API_URL}?action=getAdminLog&limit=50`;
+        if (level) url += `&level=${level}`;
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const result = await response.json();
+
+            if (result.success && result.logs.length > 0) {
+                const levelColors = { error: '#e74c3c', warn: '#f39c12', info: '#3498db' };
+                const levelLabels = { error: 'FEHLER', warn: 'WARNUNG', info: 'INFO' };
+                logList.innerHTML = result.logs.map(log => {
+                    const color = levelColors[log.level] || '#999';
+                    const label = levelLabels[log.level] || log.level;
+                    const time = new Date(log.created_at).toLocaleString('de-DE');
+                    return `<tr>
+                        <td style="white-space:nowrap;font-size:0.85em">${escapeHTML(time)}</td>
+                        <td><span style="color:${color};font-weight:bold">${label}</span></td>
+                        <td>${escapeHTML(log.action)}</td>
+                        <td>${escapeHTML(log.message)}</td>
+                        <td style="font-size:0.85em;color:#888">${log.details ? escapeHTML(log.details) : ''}</td>
+                    </tr>`;
+                }).join('');
+            } else {
+                logList.innerHTML = '<tr><td colspan="5">Keine Log-Einträge.</td></tr>';
+            }
+        } catch (error) {
+            logList.innerHTML = '<tr><td colspan="5">Fehler beim Laden: ' + escapeHTML(error.message) + '</td></tr>';
+        }
+    }
+
     // Passwort ändern
     async function changePassword() {
         if (!adminAuthenticated) return;
@@ -723,6 +764,12 @@
     // Termin-Verwaltung Event-Listener
     const addDateBtn = document.getElementById('add-date-btn');
     if (addDateBtn) addDateBtn.addEventListener('click', addTrainingDate);
+
+    // Admin-Log Event-Listener
+    const refreshLogBtn = document.getElementById('refresh-log-btn');
+    if (refreshLogBtn) refreshLogBtn.addEventListener('click', loadAdminLog);
+    const logLevelFilter = document.getElementById('log-level-filter');
+    if (logLevelFilter) logLevelFilter.addEventListener('change', loadAdminLog);
 
     // Gipfelbuch Building-Filter
     const peakbookBuildingFilter = document.getElementById('peakbook-building-filter');
