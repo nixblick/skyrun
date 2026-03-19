@@ -21,5 +21,7 @@ api/config.php
 .vscode/
 .idea/
 
-# === Sonstiges ===
+# === Interne Dokumente (nicht öffentlich) ===
+TODO.md
+NOTES.md
 wachen.txt
