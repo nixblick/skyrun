@@ -15,13 +15,19 @@ jobs:
       
       - name: Create exclude file
         run: |
-          echo ".git/" > exclude.txt
-          echo ".github/" >> exclude.txt
-          echo "*.sql" >> exclude.txt
-          echo "*.code-workspace" >> exclude.txt
-          echo "config.php" >> exclude.txt
-          echo "*.log" >> exclude.txt
-          echo "php_errors.log" >> exclude.txt
+          cat > exclude.txt << 'EXCL'
+          .git/
+          .github/
+          .gitignore
+          *.sql
+          *.code-workspace
+          *.log
+          config.php
+          config.php.example
+          README.md
+          CHANGELOG.md
+          TODO.md
+          EXCL
       
       - name: Prepare files for upload
         run: |
