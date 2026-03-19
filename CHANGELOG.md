@@ -3,10 +3,16 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.5.4] - 2026-03-19
+
+### Geändert
+- **Deploy-Exclude erweitert** (`.github/workflows/github-ssh-sftp.yml`) — README.md, CHANGELOG.md, TODO.md, config.php.example und .gitignore werden nicht mehr auf den Webserver deployed.
+- **Server aufgeräumt** — `api/`-Ordner, `backups2/`, Debug-Logs, Duplikate und Cruft entfernt. `changelog.md` (Duplikat) und `README_UPDATE.md` (obsolet) aus Repo entfernt.
+
 ## [3.5.3] - 2026-03-19
 
 ### Sicherheit
-- **`api/`-Ordner entfernt** — Alte modulare API-Dateien (nicht genutzt, `api.php` im Root macht alles). Enthielt eigene `config.php` mit Credentials. Auch auf Server + `backups2/` gelöscht.
+- **Git-History bereinigt + Credentials rotiert** — Sensible Dateien aus gesamter Git-History entfernt, alle GitHub Actions Logs gelöscht, `api/`-Ordner mit alten Credentials entfernt.
 
 ## [3.5.2] - 2026-03-19
 
