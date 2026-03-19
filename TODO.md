@@ -7,6 +7,7 @@
 
 ## KRITISCH
 
+- [ ] **BACKUP_TOKEN synchronisieren** — Backup-Workflow schlägt seit 16.03. fehl (403). Token in GitHub Secret + `.backup_config` stimmt nicht mit `config.php` auf dem Server überein. Fix: Token in `config.php` auf dem Server prüfen, GitHub Secret + `.backup_config` angleichen.
 - [ ] **Passwörter rotieren** — Bei Goneo ändern: DB-Passwort, SMTP-Passwort (`skyrun@mein-computerfreund.de`), dann `./rotate_credentials.sh` ausführen.
 - [ ] **`create_backup.php` auf Server löschen** — Alte Datei mit hardcoded Token. Wird nicht mehr genutzt, per .htaccess blockiert aber sollte weg.
 
