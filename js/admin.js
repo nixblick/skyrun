@@ -1,6 +1,6 @@
 /**
  * /js/admin.js
- * Version: 1.1.0
+ * Version: 1.2.0
  * Admin-related functionality
  */
 
@@ -124,8 +124,12 @@
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
             if (!response.ok) {
-                if (response.status === 401) handleAdminLogout();
-                throw new Error('HTTP Fehler: ' + response.status);
+                if (response.status === 401 || response.status === 403) {
+                    handleAdminLogout();
+                    alert('Session abgelaufen — bitte neu anmelden.');
+                    return;
+                }
+                throw new Error('HTTP ' + response.status);
             }
             const result = await response.json();
 
@@ -172,8 +176,12 @@
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
             if (!response.ok) {
-                if (response.status === 401) handleAdminLogout();
-                throw new Error('HTTP Fehler');
+                if (response.status === 401 || response.status === 403) {
+                    handleAdminLogout();
+                    alert('Session abgelaufen — bitte neu anmelden.');
+                    return;
+                }
+                throw new Error('HTTP ' + response.status);
             }
             const result = await response.json();
 
@@ -222,8 +230,12 @@
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
             if (!response.ok) {
-                if (response.status === 401) handleAdminLogout();
-                throw new Error('HTTP Fehler');
+                if (response.status === 401 || response.status === 403) {
+                    handleAdminLogout();
+                    alert('Session abgelaufen — bitte neu anmelden.');
+                    return;
+                }
+                throw new Error('HTTP ' + response.status);
             }
             const result = await response.json();
 
@@ -259,8 +271,12 @@
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
             if (!response.ok) {
-                if (response.status === 401) handleAdminLogout();
-                throw new Error('HTTP Fehler');
+                if (response.status === 401 || response.status === 403) {
+                    handleAdminLogout();
+                    alert('Session abgelaufen — bitte neu anmelden.');
+                    return;
+                }
+                throw new Error('HTTP ' + response.status);
             }
             const result = await response.json();
 
@@ -288,8 +304,12 @@
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
             if (!response.ok) {
-                if (response.status === 401) handleAdminLogout();
-                throw new Error('HTTP Fehler');
+                if (response.status === 401 || response.status === 403) {
+                    handleAdminLogout();
+                    alert('Session abgelaufen — bitte neu anmelden.');
+                    return;
+                }
+                throw new Error('HTTP ' + response.status);
             }
             const result = await response.json();
 
@@ -315,8 +335,12 @@
 
         const response = await fetch(API_URL, { method: 'POST', body: formData });
         if (!response.ok) {
-            if (response.status === 401) handleAdminLogout();
-            throw new Error('HTTP Fehler');
+            if (response.status === 401 || response.status === 403) {
+                handleAdminLogout();
+                alert('Session abgelaufen — bitte neu anmelden.');
+                return;
+            }
+            throw new Error('HTTP ' + response.status);
         }
         const result = await response.json();
 
@@ -342,8 +366,12 @@
 
         const response = await fetch(API_URL, { method: 'POST', body: formData });
         if (!response.ok) {
-            if (response.status === 401) handleAdminLogout();
-            throw new Error('HTTP Fehler');
+            if (response.status === 401 || response.status === 403) {
+                handleAdminLogout();
+                alert('Session abgelaufen — bitte neu anmelden.');
+                return;
+            }
+            throw new Error('HTTP ' + response.status);
         }
         const result = await response.json();
 
@@ -373,8 +401,12 @@
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: formData });
                 if (!response.ok) {
-                    if (response.status === 401) handleAdminLogout();
-                    throw new Error('HTTP Fehler');
+                    if (response.status === 401 || response.status === 403) {
+                        handleAdminLogout();
+                        alert('Session abgelaufen — bitte neu anmelden.');
+                        return;
+                    }
+                    throw new Error('HTTP ' + response.status);
                 }
                 const result = await response.json();
 
@@ -417,8 +449,12 @@
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
             if (!response.ok) {
-                if (response.status === 401) handleAdminLogout();
-                throw new Error('HTTP Fehler');
+                if (response.status === 401 || response.status === 403) {
+                    handleAdminLogout();
+                    alert('Session abgelaufen — bitte neu anmelden.');
+                    return;
+                }
+                throw new Error('HTTP ' + response.status);
             }
             const result = await response.json();
 
@@ -500,8 +536,12 @@
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
             if (!response.ok) {
-                if (response.status === 401) handleAdminLogout();
-                throw new Error('HTTP Fehler');
+                if (response.status === 401 || response.status === 403) {
+                    handleAdminLogout();
+                    alert('Session abgelaufen — bitte neu anmelden.');
+                    return;
+                }
+                throw new Error('HTTP ' + response.status);
             }
             const result = await response.json();
 
@@ -514,7 +554,7 @@
                 alert('Fehler: ' + result.message);
             }
         } catch (error) {
-            alert('Fehler beim Hinzufügen.');
+            alert('Fehler beim Hinzufügen: ' + error.message);
         } finally {
             addButton.disabled = false;
         }
@@ -530,8 +570,12 @@
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
             if (!response.ok) {
-                if (response.status === 401) handleAdminLogout();
-                throw new Error('HTTP Fehler');
+                if (response.status === 401 || response.status === 403) {
+                    handleAdminLogout();
+                    alert('Session abgelaufen — bitte neu anmelden.');
+                    return;
+                }
+                throw new Error('HTTP ' + response.status);
             }
             const result = await response.json();
 
@@ -568,8 +612,12 @@
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
             if (!response.ok) {
-                if (response.status === 401) handleAdminLogout();
-                throw new Error('HTTP Fehler');
+                if (response.status === 401 || response.status === 403) {
+                    handleAdminLogout();
+                    alert('Session abgelaufen — bitte neu anmelden.');
+                    return;
+                }
+                throw new Error('HTTP ' + response.status);
             }
             const result = await response.json();
 
