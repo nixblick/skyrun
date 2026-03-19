@@ -7,8 +7,6 @@
 
 ## KRITISCH
 
-- [x] **PHPMailer via SMTP aktiviert** (v3.3.8) — smtp.goneo.de:587/STARTTLS. Falls erneut Bounces kommen: `SMTPDebug = SMTP::DEBUG_SERVER` aktivieren + php_errors.log prüfen.
-
 - [ ] **Passwörter rotieren** — Bei Goneo ändern: DB-Passwort, SMTP-Passwort (`skyrun@mein-computerfreund.de`), dann `./rotate_credentials.sh` ausführen.
 - [ ] **`create_backup.php` auf Server löschen** — Alte Datei mit hardcoded Token. Wird nicht mehr genutzt, per .htaccess blockiert aber sollte weg.
 

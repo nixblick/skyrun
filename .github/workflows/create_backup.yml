@@ -1,12 +1,34 @@
-name: Database Backup
+name: Database Backup + Smoke Test
 on:
   schedule:
     - cron: '0 2 * * 1'  # Jeden Montag um 02:00 UTC
   workflow_dispatch:       # Manuell ausloesbar
 
 jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke Test (Termin erstellen + lesen + loeschen)
+        run: |
+          echo "Starte Smoke-Test..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -L \
+            -X POST \
+            -d "action=smokeTest&token=${{ secrets.BACKUP_TOKEN }}" \
+            "https://www.mein-computerfreund.de/api.php")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          if echo "$BODY" | grep -q '"success":true'; then
+            echo "Smoke-Test bestanden!"
+          else
+            echo "::error::Smoke-Test fehlgeschlagen: $BODY"
+            exit 1
+          fi
+
   backup:
     runs-on: ubuntu-latest
+    needs: smoke-test
     steps:
       - name: Trigger backup via API
         run: |

@@ -65,6 +65,14 @@ $conn->set_charset("utf8mb4");
 // PHP 8.1+ wirft MySQLi-Exceptions standardmäßig — explizit deaktivieren
 mysqli_report(MYSQLI_REPORT_OFF);
 
+// === Auto-Migrationen ===
+// UNIQUE(date) → UNIQUE(date, building) — erlaubt Messeturm + Trianon am selben Tag
+$indexCheck = $conn->query("SHOW INDEX FROM training_dates WHERE Key_name = 'unique_date'");
+if ($indexCheck && $indexCheck->num_rows > 0) {
+    $conn->query("ALTER TABLE training_dates DROP INDEX unique_date, ADD UNIQUE KEY unique_date_building (date, building)");
+    error_log("Migration: unique_date → unique_date_building ausgeführt");
+}
+
 // === Hilfsfunktionen ===
 
 function generateCsrfToken() {
@@ -886,7 +894,7 @@ switch ($action) {
             echo json_encode(['success' => true, 'message' => 'Termin hinzugefügt.', 'id' => $stmt->insert_id]);
         } else {
             if ($conn->errno == 1062) {
-                echo json_encode(['success' => false, 'message' => 'Dieses Datum existiert bereits.']);
+                echo json_encode(['success' => false, 'message' => 'Dieser Termin (Datum + Gebäude) existiert bereits.']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Fehler beim Hinzufügen.']);
             }
@@ -950,6 +958,82 @@ switch ($action) {
         $stmt->close();
 
         echo json_encode(['success' => $success, 'message' => $success ? 'Termin gelöscht.' : 'Fehler beim Löschen.']);
+        break;
+
+    case 'sessionStatus':
+        if (isAdminAuthenticated()) {
+            echo json_encode(['success' => true, 'message' => 'Session aktiv.']);
+        } else {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Session abgelaufen.']);
+        }
+        break;
+
+    case 'smokeTest':
+        // Token-Auth für automatisierte Tests (GitHub Actions)
+        $token = $_GET['token'] ?? $_POST['token'] ?? '';
+        if (!defined('BACKUP_TOKEN') || !hash_equals(BACKUP_TOKEN, $token)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
+        }
+
+        $testDate = '2099-12-31';
+        $testTime = '23:59';
+        $testBuildings = ['Messeturm', 'Trianon'];
+        $errors = [];
+        $insertedIds = [];
+
+        // 1. Termin(e) erstellen
+        foreach ($testBuildings as $bld) {
+            $stmt = $conn->prepare("INSERT INTO training_dates (date, time, building) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $testDate, $testTime, $bld);
+            if ($stmt->execute()) {
+                $insertedIds[] = $stmt->insert_id;
+            } else {
+                $errors[] = "INSERT $bld fehlgeschlagen: " . $conn->error;
+            }
+            $stmt->close();
+        }
+
+        // 2. Lesen prüfen
+        $stmt = $conn->prepare("SELECT id, date, building FROM training_dates WHERE date = ?");
+        $stmt->bind_param("s", $testDate);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $found = $result->num_rows;
+        $stmt->close();
+
+        if ($found !== count($insertedIds)) {
+            $errors[] = "READ: erwartet " . count($insertedIds) . " Einträge, gefunden $found";
+        }
+
+        // 3. Aufräumen
+        foreach ($insertedIds as $id) {
+            $stmt = $conn->prepare("DELETE FROM training_dates WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            if (!$stmt->execute()) {
+                $errors[] = "DELETE id=$id fehlgeschlagen: " . $conn->error;
+            }
+            $stmt->close();
+        }
+
+        // 4. Prüfen ob gelöscht
+        $stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM training_dates WHERE date = ?");
+        $stmt->bind_param("s", $testDate);
+        $stmt->execute();
+        $remaining = $stmt->get_result()->fetch_assoc()['cnt'];
+        $stmt->close();
+
+        if ($remaining > 0) {
+            $errors[] = "CLEANUP: $remaining Test-Einträge nicht gelöscht";
+        }
+
+        if (empty($errors)) {
+            echo json_encode(['success' => true, 'message' => "Smoke-Test OK: INSERT($found), READ, DELETE erfolgreich."]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Smoke-Test fehlgeschlagen', 'errors' => $errors]);
+        }
         break;
 
     case 'createBackup':

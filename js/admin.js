@@ -1,6 +1,6 @@
 /**
  * /js/admin.js
- * Version: 1.2.0
+ * Version: 1.3.0
  * Admin-related functionality
  */
 
@@ -11,12 +11,71 @@
     // Admin-spezifische Variablen
     let adminAuthenticated = false;
     let csrfToken = '';
+    let sessionTimer = null;
+    let sessionWarningTimer = null;
+    const SESSION_TIMEOUT = 30 * 60 * 1000;  // 30 Min in ms
+    const SESSION_WARNING = 25 * 60 * 1000;  // Warnung nach 25 Min
 
-    // FormData mit CSRF-Token erstellen
+    // Session-Timer: Warnung bei 25 Min, Auto-Logout bei 30 Min
+    function resetSessionTimer() {
+        if (!adminAuthenticated) return;
+        clearTimeout(sessionWarningTimer);
+        clearTimeout(sessionTimer);
+        hideSessionWarning();
+
+        sessionWarningTimer = setTimeout(() => {
+            showSessionWarning();
+        }, SESSION_WARNING);
+
+        sessionTimer = setTimeout(() => {
+            handleAdminLogout(true);
+        }, SESSION_TIMEOUT);
+    }
+
+    function showSessionWarning() {
+        if (document.getElementById('session-warning')) return;
+        const banner = document.createElement('div');
+        banner.id = 'session-warning';
+        banner.style.cssText = 'background:#ff9800;color:#000;padding:10px 16px;text-align:center;position:sticky;top:0;z-index:1000;font-weight:bold;display:flex;align-items:center;justify-content:center;gap:12px;';
+        banner.innerHTML = 'Session läuft in 5 Minuten ab! <button id="session-extend-btn" style="padding:4px 12px;cursor:pointer;">Session verlängern</button>';
+        adminContent.insertBefore(banner, adminContent.firstChild);
+        document.getElementById('session-extend-btn').addEventListener('click', extendSession);
+    }
+
+    function hideSessionWarning() {
+        const banner = document.getElementById('session-warning');
+        if (banner) banner.remove();
+    }
+
+    async function extendSession() {
+        try {
+            const formData = adminFormData('sessionStatus');
+            const response = await fetch(API_URL, { method: 'POST', body: formData });
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    resetSessionTimer();
+                    return;
+                }
+            }
+            handleAdminLogout(true);
+        } catch {
+            handleAdminLogout(true);
+        }
+    }
+
+    function stopSessionTimer() {
+        clearTimeout(sessionWarningTimer);
+        clearTimeout(sessionTimer);
+        hideSessionWarning();
+    }
+
+    // FormData mit CSRF-Token erstellen + Session-Timer resetten
     function adminFormData(action) {
         const fd = new FormData();
         fd.append('action', action);
         if (csrfToken) fd.append('csrf_token', csrfToken);
+        if (action !== 'adminLogout' && action !== 'sessionStatus') resetSessionTimer();
         return fd;
     }
     
@@ -69,8 +128,9 @@
                 const logoutBtn = document.createElement('button');
                 logoutBtn.textContent = 'Ausloggen';
                 logoutBtn.id = 'admin-logout-btn';
-                logoutBtn.addEventListener('click', handleAdminLogout);
+                logoutBtn.addEventListener('click', () => handleAdminLogout(false));
                 adminContent.insertBefore(logoutBtn, adminContent.firstChild);
+                resetSessionTimer();
             } else {
                 window.skyrunApp.trackEvent('admin-login-fail');
                 alert(result.message || 'Login fehlgeschlagen.');
@@ -83,15 +143,19 @@
     }
     
     // Admin-Logout
-    async function handleAdminLogout() {
+    async function handleAdminLogout(expired = false) {
+        stopSessionTimer();
         const formData = adminFormData('adminLogout');
-        const response = await fetch(API_URL, { method: 'POST', body: formData });
-        if (response.ok) {
-            adminAuthenticated = false;
-            csrfToken = '';
-            adminContent.classList.add('hidden');
-            document.querySelector('.admin-panel .form-group').classList.remove('hidden');
-            document.getElementById('admin-logout-btn').remove();
+        try { await fetch(API_URL, { method: 'POST', body: formData }); } catch {}
+        adminAuthenticated = false;
+        csrfToken = '';
+        adminContent.classList.add('hidden');
+        document.querySelector('.admin-panel .form-group').classList.remove('hidden');
+        const logoutBtn = document.getElementById('admin-logout-btn');
+        if (logoutBtn) logoutBtn.remove();
+        if (expired) {
+            alert('Session abgelaufen — bitte neu anmelden.');
+        } else {
             alert('Erfolgreich ausgeloggt.');
         }
     }

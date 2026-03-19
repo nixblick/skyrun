@@ -3,10 +3,18 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
-## [3.3.9] - 2026-03-19
+## [3.4.0] - 2026-03-19
+
+### Hinzugefügt
+- **Session-Timer mit Warnung** (`js/admin.js`) — Nach 25 Min Inaktivität erscheint ein oranges Banner "Session läuft in 5 Minuten ab!" mit Button "Session verlängern". Bei jeder Admin-Aktion wird der Timer automatisch zurückgesetzt. Nach 30 Min ohne Aktivität: automatischer Logout mit klarer Meldung.
+- **Smoke-Test-Endpoint** (`api.php: smokeTest`) — Automatisierter Test erstellt Termine (Messeturm + Trianon), liest sie zurück, löscht sie. Nutzt BACKUP_TOKEN zur Authentifizierung, läuft im Backup-Workflow vor dem Backup.
+- **Smoke-Test in Backup-Workflow** (`.github/workflows/create_backup.yml`) — Smoke-Test läuft als eigener Job vor dem Backup. Schlägt der Test fehl, wird kein Backup erstellt → frühzeitige Fehlererkennung.
+
+### Geändert
+- **UNIQUE-Constraint erweitert** (`training_dates`) — Von `UNIQUE(date)` auf `UNIQUE(date, building)`. Erlaubt Messeturm + Trianon am selben Tag. Auto-Migration beim nächsten API-Call, kein manuelles SQL nötig.
 
 ### Gefixt
-- **Session-Ablauf zeigt jetzt klare Fehlermeldung** (`js/admin.js`) — Bisher bekamen Admins bei abgelaufener Session nur "Fehler beim Hinzufügen" (oder ähnlich generisch) bei allen Aktionen. Jetzt wird bei 401/403 klar "Session abgelaufen — bitte neu anmelden." angezeigt und der Logout automatisch ausgeführt. Betrifft alle Admin-Funktionen (Termine, Teilnehmer, Export, Import, Gipfelbuch, Einstellungen, Passwort).
+- **Session-Ablauf zeigt jetzt klare Fehlermeldung** (`js/admin.js`) — Bisher bekamen Admins bei abgelaufener Session nur "Fehler beim Hinzufügen" (oder ähnlich generisch) bei allen Aktionen. Jetzt wird bei 401/403 klar "Session abgelaufen — bitte neu anmelden." angezeigt und der Logout automatisch ausgeführt. Betrifft alle Admin-Funktionen.
 
 ## [3.3.8] - 2026-03-15
 
