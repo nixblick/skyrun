@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.5.2] - 2026-03-19
+
+### Sicherheit
+- **Git-History bereinigt** — Sensible Dateien und Inhalte aus gesamter Git-History entfernt: `php_errors.log` (enthielt Klartext-Passwörter), SQL-Dump mit PII, `create_backup.php` (hardcoded Tokens), `backup.yml` (hat Secrets geloggt). Backup-Token aus `api.php`-History entfernt. Alle alten GitHub Actions Logs gelöscht. **Alle Credentials müssen rotiert werden.**
+
 ## [3.5.1] - 2026-03-19
 
 ### Hinzugefügt

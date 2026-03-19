@@ -7,9 +7,15 @@
 
 ## KRITISCH
 
-- [ ] **BACKUP_TOKEN synchronisieren** — Backup-Workflow schlägt seit 16.03. fehl (403). Token in GitHub Secret + `.backup_config` stimmt nicht mit `config.php` auf dem Server überein. Fix: Token in `config.php` auf dem Server prüfen, GitHub Secret + `.backup_config` angleichen.
-- [ ] **Passwörter rotieren** — Bei Goneo ändern: DB-Passwort, SMTP-Passwort (`skyrun@mein-computerfreund.de`), dann `./rotate_credentials.sh` ausführen.
+- [ ] **ALLE Credentials rotieren** — Git-History wurde bereinigt, aber alte Werte könnten gecacht/kopiert sein. Reihenfolge:
+  1. **Admin-Passwort** — im Admin-Panel ändern
+  2. **DB-Passwort** — bei Goneo ändern, dann in `config.php` auf Server aktualisieren
+  3. **SMTP-Passwort** — bei Goneo für `skyrun@mein-computerfreund.de` ändern, in `config.php` aktualisieren
+  4. **BACKUP_TOKEN** — neuen Token generieren, in `config.php` + GitHub Secret `BACKUP_TOKEN` + `.backup_config` setzen
+  5. **SFTP-Passwort** — bei Goneo ändern, GitHub Secrets `FTP_PASSWORD` + `.backup_config` aktualisieren
+  6. Test: Backup-Workflow manuell triggern, prüfen ob alles funktioniert
 - [ ] **`create_backup.php` auf Server löschen** — Alte Datei mit hardcoded Token. Wird nicht mehr genutzt, per .htaccess blockiert aber sollte weg.
+- [ ] **DSGVO: Betroffene über PII-Leak informieren** — SQL-Dump mit echten Namen/E-Mails/Telefon war in öffentlicher Git-History. Betrifft: Andre H., Jonas E., Florian E. Auch wenn History bereinigt — könnte gecacht gewesen sein.
 
 ## Bugs / Funktionale Fehler
 
