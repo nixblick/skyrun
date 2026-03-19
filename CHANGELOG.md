@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.5.3] - 2026-03-19
+
+### Sicherheit
+- **`api/`-Ordner entfernt** — Alte modulare API-Dateien (nicht genutzt, `api.php` im Root macht alles). Enthielt eigene `config.php` mit Credentials. Auch auf Server + `backups2/` gelöscht.
+
 ## [3.5.2] - 2026-03-19
 
 ### Sicherheit
