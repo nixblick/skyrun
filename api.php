@@ -112,12 +112,32 @@ function requireCsrf() {
 
 function adminLog($level, $action, $message, $details = null) {
     global $conn;
-    $stmt = $conn->prepare("INSERT INTO admin_log (level, action, message, details) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $level, $action, $message, $details);
-    $stmt->execute();
-    $stmt->close();
-    // Alte Einträge aufräumen (max 500 behalten)
-    $conn->query("DELETE FROM admin_log WHERE id NOT IN (SELECT id FROM (SELECT id FROM admin_log ORDER BY created_at DESC LIMIT 500) t)");
+    try {
+        // Sicherstellen dass Tabelle existiert
+        $check = $conn->query("SHOW TABLES LIKE 'admin_log'");
+        if (!$check || $check->num_rows === 0) {
+            $conn->query("CREATE TABLE IF NOT EXISTS admin_log (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                level ENUM('info','warn','error') NOT NULL DEFAULT 'info',
+                action VARCHAR(50) NOT NULL,
+                message TEXT NOT NULL,
+                details TEXT DEFAULT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        }
+        $stmt = $conn->prepare("INSERT INTO admin_log (level, action, message, details) VALUES (?, ?, ?, ?)");
+        if (!$stmt) {
+            error_log("adminLog prepare failed: " . $conn->error);
+            return;
+        }
+        $stmt->bind_param("ssss", $level, $action, $message, $details);
+        $stmt->execute();
+        $stmt->close();
+        // Alte Einträge aufräumen (max 500 behalten)
+        $conn->query("DELETE FROM admin_log WHERE id NOT IN (SELECT id FROM (SELECT id FROM admin_log ORDER BY created_at DESC LIMIT 500) t)");
+    } catch (Exception $e) {
+        error_log("adminLog error: " . $e->getMessage());
+    }
 }
 
 function getMaxParticipants() {
@@ -1011,23 +1031,40 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
             exit;
         }
+        // Tabelle prüfen/erstellen
+        $tableCheck = $conn->query("SHOW TABLES LIKE 'admin_log'");
+        if (!$tableCheck || $tableCheck->num_rows === 0) {
+            // Tabelle existiert noch nicht — erstellen
+            $conn->query("CREATE TABLE IF NOT EXISTS admin_log (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                level ENUM('info','warn','error') NOT NULL DEFAULT 'info',
+                action VARCHAR(50) NOT NULL,
+                message TEXT NOT NULL,
+                details TEXT DEFAULT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            // Initialen Eintrag schreiben
+            $conn->query("INSERT INTO admin_log (level, action, message) VALUES ('info', 'system', 'Admin-Log Tabelle erstellt')");
+        }
         $limit = min(100, max(10, (int)($_GET['limit'] ?? 50)));
         $levelFilter = $_GET['level'] ?? '';
+        $logs = [];
         if ($levelFilter && in_array($levelFilter, ['info', 'warn', 'error'])) {
             $stmt = $conn->prepare("SELECT id, created_at, level, action, message, details FROM admin_log WHERE level = ? ORDER BY created_at DESC LIMIT ?");
-            $stmt->bind_param("si", $levelFilter, $limit);
+            if ($stmt) { $stmt->bind_param("si", $levelFilter, $limit); }
         } else {
             $stmt = $conn->prepare("SELECT id, created_at, level, action, message, details FROM admin_log ORDER BY created_at DESC LIMIT ?");
-            $stmt->bind_param("i", $limit);
+            if ($stmt) { $stmt->bind_param("i", $limit); }
         }
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $logs = [];
-        while ($row = $result->fetch_assoc()) {
-            $logs[] = $row;
+        if ($stmt) {
+            $stmt->execute();
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $logs[] = $row;
+            }
+            $stmt->close();
         }
-        $stmt->close();
-        echo json_encode(['success' => true, 'logs' => $logs]);
+        echo json_encode(['success' => true, 'logs' => $logs, 'count' => count($logs)]);
         break;
 
     case 'sessionStatus':

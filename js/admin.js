@@ -669,17 +669,20 @@
         if (level) url += `&level=${level}`;
 
         try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const response = await fetch(url, { credentials: 'same-origin' });
+            if (!response.ok) {
+                const body = await response.text();
+                throw new Error('HTTP ' + response.status + ': ' + body.substring(0, 100));
+            }
             const result = await response.json();
 
-            if (result.success && result.logs.length > 0) {
+            if (result.success && result.logs && result.logs.length > 0) {
                 const levelColors = { error: '#e74c3c', warn: '#f39c12', info: '#3498db' };
                 const levelLabels = { error: 'FEHLER', warn: 'WARNUNG', info: 'INFO' };
                 logList.innerHTML = result.logs.map(log => {
                     const color = levelColors[log.level] || '#999';
                     const label = levelLabels[log.level] || log.level;
-                    const time = new Date(log.created_at).toLocaleString('de-DE');
+                    const time = new Date(log.created_at + 'Z').toLocaleString('de-DE');
                     return `<tr>
                         <td style="white-space:nowrap;font-size:0.85em">${escapeHTML(time)}</td>
                         <td><span style="color:${color};font-weight:bold">${label}</span></td>
@@ -689,10 +692,10 @@
                     </tr>`;
                 }).join('');
             } else {
-                logList.innerHTML = '<tr><td colspan="5">Keine Log-Einträge.</td></tr>';
+                logList.innerHTML = '<tr><td colspan="5">Keine Log-Einträge vorhanden. (Einträge erscheinen nach Login, Termin-Aktionen oder Fehlern.)</td></tr>';
             }
         } catch (error) {
-            logList.innerHTML = '<tr><td colspan="5">Fehler beim Laden: ' + escapeHTML(error.message) + '</td></tr>';
+            logList.innerHTML = '<tr><td colspan="5" style="color:#e74c3c">Log-Fehler: ' + (error.message || 'Unbekannt') + '</td></tr>';
         }
     }
 
