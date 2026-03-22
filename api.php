@@ -52,6 +52,7 @@ header('Content-Type: application/json');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 
 // OPTIONS-Anfragen für CORS Preflight
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {

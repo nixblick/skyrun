@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.6.2] - 2026-03-22
+
+### Hinzugefügt
+- **HSTS Header** (`.htaccess` + `api.php`) — `Strict-Transport-Security: max-age=31536000; includeSubDomains` erzwingt HTTPS für 1 Jahr im Browser-Cache
+
 ## [3.6.1] - 2026-03-22
 
 ### Hinzugefügt
