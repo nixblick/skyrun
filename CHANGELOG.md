@@ -3,6 +3,13 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.6.1] - 2026-03-22
+
+### Hinzugefügt
+- **OG-Image** (`img/og-skyrun.png`) — Composite-Bild (1200x630) mit MesseTurm-Foto, Avatar und Titel für Social-Media-Shares. Auch auf `static.nixblick.de/assets/images/og/` abgelegt.
+- **og:image Meta-Tags** (`index.html`) — Bild, Breite und Höhe für Social Previews
+- **robots.txt** (neu) — erlaubt alle Crawler, verweist auf sitemap.xml
+
 ## [3.6.0] - 2026-03-22
 
 ### Hinzugefügt
