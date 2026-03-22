@@ -3,10 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anmeldung zum Skyrun Training</title>
+    <title>Skyrun Training Frankfurt – Treppensteigen in Hochhäusern</title>
+    <meta name="description" content="Skyrun Training für Feuerwehr Frankfurt – Treppensteigen im MesseTurm und Trianon. Anmeldung, Termine und Infos.">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Skyrun Training Frankfurt – Treppensteigen in Hochhäusern">
+    <meta property="og:description" content="Skyrun Training für Feuerwehr Frankfurt – Treppensteigen im MesseTurm und Trianon. Anmeldung, Termine und Infos.">
+    <meta property="og:url" content="https://www.mein-computerfreund.de/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="de_DE">
+
+    <!-- SEO -->
+    <link rel="canonical" href="https://www.mein-computerfreund.de/">
+    <link rel="alternate" hreflang="de" href="https://www.mein-computerfreund.de/">
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="css/styles.css">
     <script async src="https://static.nixblick.de/analytics/tracker.js?v=3" data-site="mein-computerfreund.de"></script>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Skyrun Training Frankfurt",
+        "url": "https://www.mein-computerfreund.de",
+        "description": "Skyrun Training für Feuerwehr Frankfurt – Treppensteigen im MesseTurm und Trianon.",
+        "author": {
+            "@type": "Person",
+            "name": "André Hinz",
+            "url": "https://www.andrehinz.de"
+        }
+    }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -26,7 +55,7 @@
                 <div class="building-cards">
                     <div class="building-card">
                         <figure class="building-photo">
-                            <img src="img/messeturm.jpg" alt="MesseTurm Frankfurt">
+                            <img src="img/messeturm.jpg" alt="MesseTurm Frankfurt" loading="lazy">
                         </figure>
                         <h3>MesseTurm Frankfurt</h3>
                         <ul>
@@ -38,7 +67,7 @@
                     </div>
                     <div class="building-card">
                         <figure class="building-photo">
-                            <img src="img/trianon.jpg" alt="Trianon Frankfurt">
+                            <img src="img/trianon.jpg" alt="Trianon Frankfurt" loading="lazy">
                         </figure>
                         <h3>Trianon Frankfurt</h3>
                         <ul>
@@ -349,7 +378,7 @@
 
         <footer>
             <a href="#" id="show-admin">Admin-Bereich</a>
-            <p class="footer-credit">v3.5 &middot; <a href="https://www.andrehinz.de" target="_blank" rel="noopener">Andr&eacute; Hinz</a> &middot; <a href="/datenschutz.html">Datenschutz</a> &middot; <a href="/impressum.html">Impressum</a> &middot; <a href="https://github.com/nixblick" target="_blank" rel="noopener">GitHub</a> <button class="theme-toggle" id="theme-toggle" title="Theme wechseln">&#9790;</button></p>
+            <p class="footer-credit">v3.6 &middot; <a href="https://www.andrehinz.de" target="_blank" rel="noopener">Andr&eacute; Hinz</a> &middot; <a href="/datenschutz.html">Datenschutz</a> &middot; <a href="/impressum.html">Impressum</a> &middot; <a href="https://github.com/nixblick" target="_blank" rel="noopener">GitHub</a> <button class="theme-toggle" id="theme-toggle" title="Theme wechseln">&#9790;</button></p>
         </footer>
     </div>
 
@@ -362,9 +391,9 @@
         </div>
     </div>
     <!-- JavaScript-Dateien einbinden -->
-    <script src="js/utils.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/registration.js"></script>
-    <script src="js/admin.js"></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/main.js" defer></script>
+    <script src="js/registration.js" defer></script>
+    <script src="js/admin.js" defer></script>
 </body>
 </html>

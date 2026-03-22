@@ -3,6 +3,25 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.6.0] - 2026-03-22
+
+### Hinzugefügt
+- **SEO: Open Graph Tags** (`index.html`) — Social-Media-Shares zeigen jetzt Titel, Beschreibung und URL
+- **SEO: JSON-LD Structured Data** (`index.html`) — Schema.org WebSite-Markup für Rich Snippets
+- **SEO: Meta Description** — auf allen 3 HTML-Seiten (index, datenschutz, impressum)
+- **SEO: Canonical URL + hreflang** — auf allen 3 HTML-Seiten
+- **SEO: sitemap.xml** (neu) — alle öffentlichen Seiten mit lastmod und priority
+- **Security Headers** (`.htaccess`) — X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy
+- **Gzip-Kompression** (`.htaccess`) — HTML, CSS, JS, JSON werden komprimiert ausgeliefert
+- **Cache-Control** (`.htaccess`) — Bilder 1 Jahr, CSS/JS 1 Monat Browser-Cache
+- **Lazy Loading** (`index.html`) — Gebäude-Bilder laden erst bei Bedarf
+- **Script defer** (`index.html`) — JS-Dateien blockieren nicht mehr das HTML-Parsing
+- **Impressum: noindex** — spart Crawl-Budget
+
+### Geändert
+- **Seitentitel** optimiert: "Skyrun Training Frankfurt – Treppensteigen in Hochhäusern" (statt generisch)
+- Version auf 3.6.0 (Minor: neue SEO- und Performance-Features)
+
 ## [3.5.4] - 2026-03-19
 
 ### Geändert
