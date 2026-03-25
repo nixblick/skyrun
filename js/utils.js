@@ -58,6 +58,7 @@
         registrationStatus.textContent = message;
         registrationStatus.className = `registration-status ${type}`;
         registrationStatus.classList.remove('hidden');
+        registrationStatus.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
     
     /**

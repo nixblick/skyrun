@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.6.3] - 2026-03-25
+
+### Verbessert
+- **Fehlermeldung bei Anmeldung** — Status-Meldung (z.B. "CAPTCHA falsch oder abgelaufen") wird jetzt direkt über dem Anmelde-Button angezeigt statt ganz oben im Formular. Zusätzlich scrollt die Seite automatisch zur Meldung. Nutzer haben Fehler nicht gesehen, weil die Meldung außerhalb des sichtbaren Bereichs war.
+
 ## [3.6.2] - 2026-03-22
 
 ### Hinzugefügt
