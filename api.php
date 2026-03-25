@@ -405,6 +405,24 @@ switch ($action) {
         ]);
         break;
 
+    case 'getPublicRegistrations':
+        $date = trim($_GET['date'] ?? '');
+        if (empty($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            echo json_encode(['success' => false, 'message' => 'Kein oder ungültiges Datum.']);
+            exit;
+        }
+        $stmt = $conn->prepare("SELECT station, personCount FROM registrations WHERE date = ? AND waitlisted = 0 ORDER BY station ASC");
+        $stmt->bind_param("s", $date);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $registrations = [];
+        while ($row = $result->fetch_assoc()) {
+            $registrations[] = ['station' => $row['station'], 'personCount' => (int)$row['personCount']];
+        }
+        $stmt->close();
+        echo json_encode(['success' => true, 'registrations' => $registrations]);
+        break;
+
     case 'adminLogin':
         // Rate Limiting: file-basiert pro IP (nicht Session, da sonst umgehbar)
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
@@ -654,9 +672,44 @@ switch ($action) {
             $stmt->bind_param("ii", $newCount, $id);
             $stmt->execute();
             $stmt->close();
+
+            // Bei Reduzierung: Wartelisten-Einträge automatisch hochstufen
+            $promoted = [];
+            if (!$reg['waitlisted'] && $newCount < $reg['personCount']) {
+                $countStmt = $conn->prepare("SELECT COALESCE(SUM(personCount), 0) as total FROM registrations WHERE date = ? AND waitlisted = 0 FOR UPDATE");
+                $countStmt->bind_param("s", $date);
+                $countStmt->execute();
+                $currentTotal = (int)$countStmt->get_result()->fetch_assoc()['total'];
+                $countStmt->close();
+
+                $maxParticipants = getMaxParticipants();
+                $availableSpots = $maxParticipants - $currentTotal;
+
+                if ($availableSpots > 0) {
+                    $waitStmt = $conn->prepare("SELECT id, personCount FROM registrations WHERE date = ? AND waitlisted = 1 ORDER BY registrationTime ASC FOR UPDATE");
+                    $waitStmt->bind_param("s", $date);
+                    $waitStmt->execute();
+                    $waitlistResult = $waitStmt->get_result();
+
+                    while ($availableSpots > 0 && $waitlistEntry = $waitlistResult->fetch_assoc()) {
+                        if ($waitlistEntry['personCount'] <= $availableSpots) {
+                            $updateStmt = $conn->prepare("UPDATE registrations SET waitlisted = 0 WHERE id = ?");
+                            $updateStmt->bind_param("i", $waitlistEntry['id']);
+                            $updateStmt->execute();
+                            $updateStmt->close();
+                            $availableSpots -= $waitlistEntry['personCount'];
+                            $promoted[] = $waitlistEntry['id'];
+                        } else {
+                            break;
+                        }
+                    }
+                    $waitStmt->close();
+                }
+            }
+
             $conn->commit();
 
-            adminLog('info', 'updatePersonCount', "ID $id: {$reg['personCount']} → $newCount Personen", "Datum: $date");
+            adminLog('info', 'updatePersonCount', "ID $id: {$reg['personCount']} → $newCount Personen", "Datum: $date" . (count($promoted) > 0 ? ", " . count($promoted) . " von Warteliste hochgestuft" : ""));
         } catch (Exception $e) {
             $conn->rollback();
             error_log("updatePersonCount Transaction-Fehler: " . $e->getMessage());
@@ -664,7 +717,30 @@ switch ($action) {
             exit;
         }
 
-        echo json_encode(['success' => true, 'message' => "Personenanzahl auf $newCount geändert."]);
+        // E-Mails für hochgestufte Teilnehmer senden (außerhalb Transaction)
+        foreach ($promoted as $promotedId) {
+            if (defined('MAIL_ENABLED') && MAIL_ENABLED) {
+                $detailsStmt = $conn->prepare("SELECT name, email, station, personCount, building FROM registrations WHERE id = ?");
+                $detailsStmt->bind_param("i", $promotedId);
+                $detailsStmt->execute();
+                $details = $detailsStmt->get_result()->fetch_assoc();
+                $detailsStmt->close();
+
+                if ($details) {
+                    $timeStmt = $conn->prepare("SELECT TIME_FORMAT(time, '%H:%i') as time FROM training_dates WHERE date = ?");
+                    $timeStmt->bind_param("s", $date);
+                    $timeStmt->execute();
+                    $timeRow = $timeStmt->get_result()->fetch_assoc();
+                    $timeStmt->close();
+                    $promoteTime = $timeRow['time'] ?? '19:00';
+
+                    sendRegistrationConfirmation($details['email'], $details['name'], $date, $details['personCount'], false, $details['station'], $details['building'] ?? 'Messeturm', $promoteTime);
+                }
+            }
+        }
+
+        $promotedMsg = count($promoted) > 0 ? " " . count($promoted) . " von Warteliste hochgestuft." : "";
+        echo json_encode(['success' => true, 'message' => "Personenanzahl auf $newCount geändert.$promotedMsg"]);
         break;
 
     case 'promoteFromWaitlist':

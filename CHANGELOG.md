@@ -3,6 +3,12 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.8.0] - 2026-03-25
+
+### Hinzugefügt
+- **Öffentliche Anmeldungsliste** — "Anmeldungen"-Button bei jedem der 3 nächsten Termine. Zeigt Wache + Personenanzahl — keine Namen, keine E-Mails. Jeder kann sehen, wer von welcher Wache angemeldet ist.
+- **Auto-Promote bei Reduzierung** — Wenn Admin die Personenanzahl reduziert, werden automatisch Wartelisten-Einträge hochgestuft (inkl. E-Mail-Benachrichtigung).
+
 ## [3.7.0] - 2026-03-25
 
 ### Hinzugefügt

@@ -200,12 +200,51 @@
                         '<span class="run-stat-label">Warteliste</span>' +
                     '</div>' +
                     '<span class="run-days">' + dayLabel + '</span>' +
-                '</div>';
+                '</div>' +
+                '<button class="show-registrations-btn" data-date="' + dateInfo.date + '">Anmeldungen</button>' +
+                '<div class="public-registrations hidden" id="pub-reg-' + dateInfo.date + '"></div>';
+
+            card.querySelector('.show-registrations-btn').addEventListener('click', function() {
+                togglePublicRegistrations(this.dataset.date);
+            });
 
             upcomingRunsEl.appendChild(card);
         }
     }
     
+    // Öffentliche Anmeldungsliste toggle
+    async function togglePublicRegistrations(date) {
+        var container = document.getElementById('pub-reg-' + date);
+        if (!container) return;
+
+        if (!container.classList.contains('hidden')) {
+            container.classList.add('hidden');
+            return;
+        }
+
+        container.innerHTML = '<p class="loading-text">Lade...</p>';
+        container.classList.remove('hidden');
+
+        try {
+            var response = await fetch(API_URL + '?action=getPublicRegistrations&date=' + date);
+            if (!response.ok) throw new Error('HTTP Fehler');
+            var result = await response.json();
+
+            if (result.success && result.registrations.length > 0) {
+                var html = '<table class="public-reg-table"><thead><tr><th>Wache</th><th>Personen</th></tr></thead><tbody>';
+                result.registrations.forEach(function(r) {
+                    html += '<tr><td>' + window.skyrunApp.escapeHTML(r.station) + '</td><td>' + r.personCount + '</td></tr>';
+                });
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p class="no-data-text">Noch keine Anmeldungen.</p>';
+            }
+        } catch (e) {
+            container.innerHTML = '<p class="error-text">Fehler beim Laden.</p>';
+        }
+    }
+
     // Statistiken aktualisieren (für Formular-Kontext)
     async function updateStatistics() {
         if (!runDateSelect) return;
