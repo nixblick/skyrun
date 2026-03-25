@@ -210,10 +210,11 @@
                             <td>${escapeHTML(p.email)}</td>
                             <td>${escapeHTML(p.phone || '-')}</td>
                             <td>${escapeHTML(p.station)}</td>
-                            <td>${p.personCount}</td>
+                            <td class="editable-count" data-id="${p.id}" data-date="${selectedDate}" title="Klicken zum Ändern">${p.personCount}</td>
                             <td><button class="action-btn remove-btn" data-id="${p.id}" data-date="${selectedDate}">Entfernen</button></td>
                         `;
                         row.querySelector('.remove-btn').addEventListener('click', () => removeParticipant(p.id, selectedDate));
+                        row.querySelector('.editable-count').addEventListener('click', handleEditPersonCount);
                     });
                 }
                 window.skyrunApp.config.maxParticipants = result.maxParticipants;
@@ -262,7 +263,7 @@
                             <td>${escapeHTML(p.email)}</td>
                             <td>${escapeHTML(p.phone || '-')}</td>
                             <td>${escapeHTML(p.station)}</td>
-                            <td>${p.personCount}</td>
+                            <td class="editable-count" data-id="${p.id}" data-date="${selectedDate}" title="Klicken zum Ändern">${p.personCount}</td>
                             <td>
                                 <button class="action-btn promote-btn" data-id="${p.id}" data-date="${selectedDate}">Hochstufen</button>
                                 <button class="action-btn remove-btn" data-id="${p.id}" data-date="${selectedDate}">Entfernen</button>
@@ -270,6 +271,7 @@
                         `;
                         row.querySelector('.promote-btn').addEventListener('click', () => promoteFromWaitlist(p.id, selectedDate));
                         row.querySelector('.remove-btn').addEventListener('click', () => removeParticipant(p.id, selectedDate));
+                        row.querySelector('.editable-count').addEventListener('click', handleEditPersonCount);
                     });
                 }
             } else {
@@ -325,6 +327,79 @@
         }
     }
     
+    // Personenanzahl inline bearbeiten
+    function handleEditPersonCount(e) {
+        const cell = e.currentTarget;
+        if (cell.querySelector('input')) return; // Bereits im Edit-Modus
+        const currentCount = parseInt(cell.textContent);
+        const id = cell.dataset.id;
+        const date = cell.dataset.date;
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = 1;
+        input.max = 10;
+        input.value = currentCount;
+        input.className = 'inline-edit-count';
+        cell.textContent = '';
+        cell.appendChild(input);
+        input.focus();
+        input.select();
+
+        function save() {
+            const newCount = parseInt(input.value);
+            if (isNaN(newCount) || newCount < 1 || newCount > 10) {
+                cell.textContent = currentCount;
+                return;
+            }
+            if (newCount === currentCount) {
+                cell.textContent = currentCount;
+                return;
+            }
+            updatePersonCount(id, date, newCount, cell, currentCount);
+        }
+
+        input.addEventListener('blur', save);
+        input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+            if (ev.key === 'Escape') { cell.textContent = currentCount; }
+        });
+    }
+
+    // Personenanzahl über API aktualisieren
+    async function updatePersonCount(id, date, newCount, cell, oldCount) {
+        const formData = adminFormData('updatePersonCount');
+        formData.append('id', id);
+        formData.append('date', date);
+        formData.append('personCount', newCount);
+
+        try {
+            const response = await fetch(API_URL, { method: 'POST', body: formData });
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    handleAdminLogout();
+                    alert('Session abgelaufen — bitte neu anmelden.');
+                    return;
+                }
+                throw new Error('HTTP ' + response.status);
+            }
+            const result = await response.json();
+
+            if (result.success) {
+                cell.textContent = newCount;
+                updateParticipantsList();
+                updateWaitlistTable();
+                window.skyrunApp.updateStatistics();
+            } else {
+                cell.textContent = oldCount;
+                alert('Fehler: ' + result.message);
+            }
+        } catch (error) {
+            cell.textContent = oldCount;
+            alert('Netzwerkfehler beim Aktualisieren.');
+        }
+    }
+
     // Teilnehmer entfernen
     async function removeParticipant(id, date) {
         if (!adminAuthenticated || !confirm(`Registrierung (ID: ${id}) entfernen?`)) return;

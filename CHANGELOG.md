@@ -3,6 +3,11 @@
 Alle relevanten Änderungen am Projekt werden hier dokumentiert.
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [3.7.0] - 2026-03-25
+
+### Hinzugefügt
+- **Admin: Personenanzahl ändern** — Admins können in der Teilnehmer- und Warteliste die Personenanzahl per Klick direkt bearbeiten (Inline-Edit). Kapazitätsprüfung inklusive. Neuer API-Endpoint `updatePersonCount`.
+
 ## [3.6.3] - 2026-03-25
 
 ### Verbessert

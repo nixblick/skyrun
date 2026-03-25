@@ -602,6 +602,71 @@ switch ($action) {
         echo json_encode(['success' => true, 'message' => 'Teilnehmer entfernt.']);
         break;
 
+    case 'updatePersonCount':
+        if (!isAdminAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht autorisiert.']);
+            exit;
+        }
+        requireCsrf();
+        $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
+        $newCount = filter_var($_POST['personCount'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 10]]);
+        $date = trim($_POST['date'] ?? '');
+
+        if ($id <= 0 || $newCount === false || empty($date)) {
+            echo json_encode(['success' => false, 'message' => 'Ungültige Parameter.']);
+            exit;
+        }
+
+        $conn->begin_transaction();
+        try {
+            // Aktuelle Registrierung laden
+            $stmt = $conn->prepare("SELECT personCount, waitlisted FROM registrations WHERE id = ? FOR UPDATE");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $reg = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+
+            if (!$reg) {
+                $conn->rollback();
+                echo json_encode(['success' => false, 'message' => 'Teilnehmer nicht gefunden.']);
+                exit;
+            }
+
+            // Bei nicht-waitlisted: Kapazität prüfen wenn Anzahl erhöht wird
+            if (!$reg['waitlisted'] && $newCount > $reg['personCount']) {
+                $countStmt = $conn->prepare("SELECT COALESCE(SUM(personCount), 0) as total FROM registrations WHERE date = ? AND waitlisted = 0 FOR UPDATE");
+                $countStmt->bind_param("s", $date);
+                $countStmt->execute();
+                $currentTotal = (int)$countStmt->get_result()->fetch_assoc()['total'];
+                $countStmt->close();
+
+                $maxParticipants = getMaxParticipants();
+                $difference = $newCount - $reg['personCount'];
+                if (($currentTotal + $difference) > $maxParticipants) {
+                    $conn->rollback();
+                    echo json_encode(['success' => false, 'message' => "Kapazität überschritten. Noch " . ($maxParticipants - $currentTotal) . " Plätze frei."]);
+                    exit;
+                }
+            }
+
+            $stmt = $conn->prepare("UPDATE registrations SET personCount = ? WHERE id = ?");
+            $stmt->bind_param("ii", $newCount, $id);
+            $stmt->execute();
+            $stmt->close();
+            $conn->commit();
+
+            adminLog('info', 'updatePersonCount', "ID $id: {$reg['personCount']} → $newCount Personen", "Datum: $date");
+        } catch (Exception $e) {
+            $conn->rollback();
+            error_log("updatePersonCount Transaction-Fehler: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Fehler beim Aktualisieren.']);
+            exit;
+        }
+
+        echo json_encode(['success' => true, 'message' => "Personenanzahl auf $newCount geändert."]);
+        break;
+
     case 'promoteFromWaitlist':
         if (!isAdminAuthenticated()) {
             http_response_code(401);

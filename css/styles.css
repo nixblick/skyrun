@@ -421,6 +421,25 @@ th {
     background-color: var(--danger-color);
 }
 
+.editable-count {
+    cursor: pointer;
+    user-select: none;
+}
+
+.editable-count:hover {
+    background-color: var(--table-hover-bg, rgba(0,0,0,0.05));
+    border-radius: 3px;
+}
+
+.inline-edit-count {
+    width: 60px;
+    padding: 2px 4px;
+    font-size: 14px;
+    text-align: center;
+    border: 2px solid var(--primary-color);
+    border-radius: 3px;
+}
+
 /* Modal Styles */
 .modal {
     position: fixed;
