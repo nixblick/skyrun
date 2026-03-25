@@ -28,8 +28,8 @@ function validateCaptcha($answer) {
         return false;
     }
 
-    // CAPTCHA nach 10 Minuten abgelaufen
-    if (time() - $_SESSION['captcha_time'] > 600) {
+    // CAPTCHA nach 20 Minuten abgelaufen
+    if (time() - $_SESSION['captcha_time'] > 1200) {
         return false;
     }
 
@@ -333,7 +333,8 @@ switch ($action) {
         $stmt->execute();
         if ($stmt->get_result()->num_rows > 0) {
             $conn->rollback();
-            echo json_encode(['success' => false, 'message' => 'E-Mail bereits für dieses Datum registriert.']);
+            $formattedDate = date('d.m.Y', strtotime($date));
+            echo json_encode(['success' => false, 'message' => "E-Mail bereits für den $formattedDate registriert. Bitte anderes Datum wählen."]);
             exit;
         }
         $stmt->close();

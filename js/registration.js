@@ -84,6 +84,7 @@
             } else {
                 showStatus(result.message || 'Fehler bei der Anmeldung.', 'error');
                 loadCaptcha(); // Neues CAPTCHA bei Fehler
+                document.getElementById('captcha').value = ''; // Altes CAPTCHA-Ergebnis leeren
             }
         } catch (error) {
             showStatus('Netzwerkfehler.', 'error');
